@@ -39,6 +39,7 @@
 #include <string.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/oki_adpcm.h"
 #include "spandsp/private/oki_adpcm.h"
 
@@ -246,13 +247,13 @@ SPAN_DECLARE(oki_adpcm_state_t *) oki_adpcm_init(oki_adpcm_state_t *s, int bit_r
         return NULL;
     if (s == NULL)
     {
-        if ((s = (oki_adpcm_state_t *) malloc(sizeof(*s))) == NULL)
-            return  NULL;
+        if ((s = (oki_adpcm_state_t *) span_alloc(sizeof(*s))) == NULL)
+            return NULL;
     }
     memset(s, 0, sizeof(*s));
     s->bit_rate = bit_rate;
     
-    return  s;
+    return s;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -264,7 +265,7 @@ SPAN_DECLARE(int) oki_adpcm_release(oki_adpcm_state_t *s)
 
 SPAN_DECLARE(int) oki_adpcm_free(oki_adpcm_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -318,7 +319,7 @@ SPAN_DECLARE(int) oki_adpcm_decode(oki_adpcm_state_t *s,
         /*endfor*/
     }
     /*endif*/
-    return  samples;
+    return samples;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -379,7 +380,7 @@ SPAN_DECLARE(int) oki_adpcm_encode(oki_adpcm_state_t *s,
         /*endfor*/
     }
     /*endif*/
-    return  bytes;
+    return bytes;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

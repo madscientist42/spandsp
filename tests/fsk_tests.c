@@ -51,10 +51,6 @@ These tests allow either:
 #include <assert.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -65,7 +61,7 @@ These tests allow either:
 char *decode_test_file = NULL;
 both_ways_line_model_state_t *model;
 int rx_bits = 0;
-int cutoff_test_carrier = FALSE;
+int cutoff_test_carrier = false;
 
 static void rx_status(void *user_data, int status)
 {
@@ -97,10 +93,10 @@ static void cutoff_test_rx_status(void *user_data, int status)
     switch (status)
     {
     case SIG_STATUS_CARRIER_UP:
-        cutoff_test_carrier = TRUE;
+        cutoff_test_carrier = true;
         break;
     case SIG_STATUS_CARRIER_DOWN:
-        cutoff_test_carrier = FALSE;
+        cutoff_test_carrier = false;
         break;
     }
 }
@@ -178,7 +174,7 @@ int main(int argc, char *argv[])
     int16_t out_amp[2*BLOCK_LEN];
     SNDFILE *inhandle;
     SNDFILE *outhandle;
-    int outframes;    
+    int outframes;
     int i;
     int j;
     int samples;
@@ -190,23 +186,23 @@ int main(int argc, char *argv[])
     int modem_under_test_1;
     int modem_under_test_2;
     int modems_set;
-    int log_audio;
     int channel_codec;
     int rbs_pattern;
     int on_at;
     int off_at;
+    int opt;
+    int log_audio;
     tone_gen_descriptor_t tone_desc;
     tone_gen_state_t tone_tx;
-    int opt;
 
     channel_codec = MUNGE_CODEC_NONE;
     rbs_pattern = 0;
     line_model_no = 0;
     decode_test_file = NULL;
-    noise_sweep = FALSE;
+    noise_sweep = false;
     modem_under_test_1 = FSK_V21CH1;
     modem_under_test_2 = FSK_V21CH2;
-    log_audio = FALSE;
+    log_audio = false;
     modems_set = 0;
     while ((opt = getopt(argc, argv, "c:d:lm:nr:s:")) != -1)
     {
@@ -219,13 +215,13 @@ int main(int argc, char *argv[])
             decode_test_file = optarg;
             break;
         case 'l':
-            log_audio = TRUE;
+            log_audio = true;
             break;
         case 'm':
             line_model_no = atoi(optarg);
             break;
         case 'n':
-            noise_sweep = TRUE;
+            noise_sweep = true;
             break;
         case 'r':
             rbs_pattern = atoi(optarg);
@@ -300,6 +296,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "    Cannot close audio file '%s'\n", decode_test_file);
             exit(2);
         }
+        fsk_rx_free(caller_rx);
     }
     else
     {
@@ -319,7 +316,7 @@ int main(int argc, char *argv[])
                                      0,
                                      0,
                                      0,
-                                     TRUE);
+                                     true);
             tone_gen_init(&tone_tx, &tone_desc);
             for (j = 0;  j < 10;  j++)
             {
@@ -342,7 +339,7 @@ int main(int argc, char *argv[])
                                      0,
                                      0,
                                      0,
-                                     TRUE);
+                                     true);
             tone_gen_init(&tone_tx, &tone_desc);
             for (j = 0;  j < 10;  j++)
             {
@@ -354,14 +351,15 @@ int main(int argc, char *argv[])
         }
         off_at = i;
         printf("Carrier on at %d, off at %d\n", on_at, off_at);
-        if (on_at < -29  ||  on_at > -26  
+        if (on_at < -29  ||  on_at > -26
             ||
             off_at < -35  ||  off_at > -31)
         {
             printf("Tests failed.\n");
             exit(2);
         }
-                
+        fsk_rx_free(caller_rx);
+
         printf("Test with BERT\n");
         test_bps = preset_fsk_specs[modem_under_test_1].baud_rate;
         if (modem_under_test_1 >= 0)
@@ -430,7 +428,7 @@ int main(int argc, char *argv[])
                 out_amp[2*i + 1] = answerer_model_amp[i];
             for (  ;  i < BLOCK_LEN;  i++)
                 out_amp[2*i + 1] = 0;
-        
+
             if (log_audio)
             {
                 outframes = sf_writef_short(outhandle, out_amp, BLOCK_LEN);
@@ -472,7 +470,7 @@ int main(int argc, char *argv[])
                     }
                     break;
                 }
-    
+
                 /* Put a little silence between the chunks in the file. */
                 memset(out_amp, 0, sizeof(out_amp));
                 if (log_audio)
@@ -495,6 +493,7 @@ int main(int argc, char *argv[])
                     fsk_rx_set_modem_status_handler(caller_rx, rx_status, (void *) &caller_rx);
                 }
                 noise_level++;
+                both_ways_line_model_free(model);
                 if ((model = both_ways_line_model_init(line_model_no,
                                                        (float) noise_level,
                                                        line_model_no,
@@ -515,6 +514,19 @@ int main(int argc, char *argv[])
                 bert_set_report(&answerer_bert, 100000, reporter, (void *) (intptr_t) 2);
             }
         }
+        bert_release(&caller_bert);
+        bert_release(&answerer_bert);
+        if (modem_under_test_1 >= 0)
+        {
+            fsk_tx_free(caller_tx);
+            fsk_rx_free(answerer_rx);
+        }
+        if (modem_under_test_2 >= 0)
+        {
+            fsk_tx_free(answerer_tx);
+            fsk_rx_free(caller_rx);
+        }
+        both_ways_line_model_free(model);
         printf("Tests passed.\n");
     }
     if (log_audio)
@@ -525,7 +537,7 @@ int main(int argc, char *argv[])
             exit(2);
         }
     }
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

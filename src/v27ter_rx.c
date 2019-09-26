@@ -40,10 +40,19 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
+#include "spandsp/fast_convert.h"
+#include "spandsp/math_fixed.h"
+#include "spandsp/saturated.h"
 #include "spandsp/complex.h"
 #include "spandsp/vector_float.h"
 #include "spandsp/complex_vector_float.h"
@@ -59,6 +68,7 @@
 #include "spandsp/v27ter_rx.h"
 
 #include "spandsp/private/logging.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/v27ter_rx.h"
 
 #if defined(SPANDSP_USE_FIXED_POINT)
@@ -808,13 +818,13 @@ static __inline__ int signal_detect(v27ter_rx_state_t *s, int16_t amp)
             {
                 /* Count down a short delay, to ensure we push the last
                    few bits through the filters before stopping. */
-                v27ter_rx_restart(s, s->bit_rate, FALSE);
+                v27ter_rx_restart(s, s->bit_rate, false);
                 report_status_change(s, SIG_STATUS_CARRIER_DOWN);
                 return 0;
             }
 #if defined(IAXMODEM_STUFF)
             /* Carrier has dropped, but the put_bit is pending the signal_present delay. */
-            s->carrier_drop_pending = TRUE;
+            s->carrier_drop_pending = true;
 #endif
         }
     }
@@ -825,7 +835,7 @@ static __inline__ int signal_detect(v27ter_rx_state_t *s, int16_t amp)
             return 0;
         s->signal_present = 1;
 #if defined(IAXMODEM_STUFF)
-        s->carrier_drop_pending = FALSE;
+        s->carrier_drop_pending = false;
 #endif
         report_status_change(s, SIG_STATUS_CARRIER_UP);
     }
@@ -1057,7 +1067,7 @@ SPAN_DECLARE(int) v27ter_rx_restart(v27ter_rx_state_t *s, int bit_rate, int old_
 #if defined(IAXMODEM_STUFF)
     s->high_sample = 0;
     s->low_samples = 0;
-    s->carrier_drop_pending = FALSE;
+    s->carrier_drop_pending = false;
 #endif
     vec_zeroi32(s->diff_angles, 16);
 
@@ -1113,7 +1123,7 @@ SPAN_DECLARE(v27ter_rx_state_t *) v27ter_rx_init(v27ter_rx_state_t *s, int bit_r
     }
     if (s == NULL)
     {
-        if ((s = (v27ter_rx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (v27ter_rx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -1123,7 +1133,7 @@ SPAN_DECLARE(v27ter_rx_state_t *) v27ter_rx_init(v27ter_rx_state_t *s, int bit_r
     s->put_bit = put_bit;
     s->put_bit_user_data = user_data;
 
-    v27ter_rx_restart(s, bit_rate, FALSE);
+    v27ter_rx_restart(s, bit_rate, false);
     return s;
 }
 /*- End of function --------------------------------------------------------*/
@@ -1136,7 +1146,7 @@ SPAN_DECLARE(int) v27ter_rx_release(v27ter_rx_state_t *s)
 
 SPAN_DECLARE(int) v27ter_rx_free(v27ter_rx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

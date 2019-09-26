@@ -33,10 +33,10 @@
 */
 struct fax_modems_state_s
 {
-    /*! TRUE is talker echo protection should be sent for the image modems */
+    /*! True is talker echo protection should be sent for the image modems */
     int use_tep;
 
-    /*! If TRUE, transmit silence when there is nothing else to transmit. If FALSE return only
+    /*! If true, transmit silence when there is nothing else to transmit. If false return only
         the actual generated audio. Note that this only affects untimed silences. Timed silences
         (e.g. the 75ms silence between V.21 and a high speed modem) will alway be transmitted as
         silent audio. */
@@ -87,11 +87,11 @@ struct fax_modems_state_s
     /*! \brief The currently selected transmitter type */
     int current_tx_type;
 
-    /*! \brief TRUE if a carrier is present. Otherwise FALSE. */
+    /*! \brief True if a carrier is present. Otherwise false. */
     int rx_signal_present;
-    /*! \brief TRUE if a modem has trained correctly. */
+    /*! \brief True if a modem has trained correctly. */
     int rx_trained;
-    /*! \brief TRUE if an HDLC frame has been received correctly. */
+    /*! \brief True if an HDLC frame has been received correctly. */
     int rx_frame_received;
 
     /*! \brief The current receive signal handler */
@@ -114,7 +114,7 @@ struct fax_modems_state_s
     /*! \brief The current bit rate of the receiver. */
     int rx_bit_rate;
 
-    /*! \brief If TRUE, transmission is in progress */
+    /*! \brief If True, transmission is in progress */
     int transmit;
     /*! \brief Audio logging file handle for received audio. */
     int audio_rx_log;

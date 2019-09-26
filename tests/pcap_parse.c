@@ -79,7 +79,7 @@ struct iphdr
     uint32_t daddr;
     /*The options start here. */
 };
-   
+
 #endif
 
 /* We define our own structures for Ethernet Header and IPv6 Header as they are not available on CYGWIN.

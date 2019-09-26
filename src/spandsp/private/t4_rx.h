@@ -34,17 +34,17 @@
 */
 typedef struct
 {
-    /*! \brief The vendor of the machine which produced the file. */ 
+    /*! \brief The vendor of the machine which produced the file. */
     const char *vendor;
-    /*! \brief The model of machine which produced the file. */ 
+    /*! \brief The model of machine which produced the file. */
     const char *model;
-    /*! \brief The local ident string. */ 
+    /*! \brief The local ident string. */
     const char *local_ident;
-    /*! \brief The remote end's ident string. */ 
+    /*! \brief The remote end's ident string. */
     const char *far_ident;
-    /*! \brief The FAX sub-address. */ 
+    /*! \brief The FAX sub-address. */
     const char *sub_address;
-    /*! \brief The FAX DCS information, as an ASCII hex string. */ 
+    /*! \brief The FAX DCS information, as an ASCII hex string. */
     const char *dcs;
 } t4_rx_metadata_t;
 

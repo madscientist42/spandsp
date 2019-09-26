@@ -36,10 +36,10 @@ typedef struct
     /*! \brief Core T.38 IFP support */
     t38_core_state_t t38;
 
-    /*! \brief TRUE if the NSF, NSC, and NSS are to be suppressed by altering
-               their contents to something the far end will not recognise. */
+    /*! \brief If NSF, NSC, and NSS are to be suppressed by altering their contents to
+               something the far end will not recognise, this is the amount to overwrite. */
     int suppress_nsx_len[2];
-    /*! \brief TRUE if we need to corrupt the HDLC frame in progress, so the receiver cannot
+    /*! \brief True if we need to corrupt the HDLC frame in progress, so the receiver cannot
                interpret it. The two values are for the two directions. */
     int corrupt_current_frame[2];
 
@@ -77,22 +77,22 @@ typedef struct
     /*! \brief The current octet being received as non-ECM data. */
     unsigned int bit_stream;
     /*! \brief The number of bits taken from the modem for the current scan row. This
-               is used during non-ECM transmission will fill bit removal to see that
+               is used during non-ECM transmission with fill bit removal to see that
                T.38 packet transmissions do not stretch too far apart. */
     int bits_absorbed;
     /*! \brief The current bit number in the current non-ECM octet. */
     int bit_no;
     /*! \brief Progressively calculated CRC for HDLC messages received from a modem. */
     uint16_t crc;
-    /*! \brief TRUE if non-ECM fill bits are to be stripped when sending image data. */
+    /*! \brief True if non-ECM fill bits are to be stripped when sending image data. */
     int fill_bit_removal;
-    /*! \brief The number of octets to send in each image packet (non-ECM or ECM) at the current
-               rate and the current specified packet interval. */
+    /*! \brief The number of octets to send in each image packet (non-ECM or ECM) at
+               the current rate and the current specified packet interval. */
     int octets_per_data_packet;
 
-    /*! \brief Bits into the non-ECM buffer */
+    /*! \brief The number of bits into the non-ECM buffer */
     int in_bits;
-    /*! \brief Octets fed out from the non-ECM buffer */
+    /*! \brief The number of octets fed out from the non-ECM buffer */
     int out_octets;
 } t38_gateway_to_t38_state_t;
 
@@ -141,26 +141,26 @@ typedef struct
 {
     /*! \brief A bit mask of the currently supported modem types. */
     int supported_modems;
-    /*! \brief TRUE if ECM FAX mode is allowed through the gateway. */
+    /*! \brief True if ECM FAX mode is allowed through the gateway. */
     int ecm_allowed;
     /*! \brief Required time between T.38 transmissions, in ms. */
     int ms_per_tx_chunk;
 
-    /*! \brief TRUE if in image data modem is to use short training. This usually
+    /*! \brief True if in image data modem is to use short training. This usually
                follows image_data_mode, but in ECM mode T.30 defines recovery
                conditions in which long training is used for image data. */
     int short_train;
-    /*! \brief TRUE if in image data mode, as opposed to TCF mode. */
+    /*! \brief True if in image data mode, as opposed to TCF mode. */
     int image_data_mode;
     /*! \brief The minimum permitted bits per FAX scan line row. */
     int min_row_bits;
 
-    /*! \brief TRUE if we should count the next MCF as a page end, else FALSE */
+    /*! \brief True if we should count the next MCF as a page end, else false */
     int count_page_on_mcf;
     /*! \brief The number of pages for which a confirm (MCF) message was returned. */
     int pages_confirmed;
 
-    /*! \brief TRUE if we are in error correcting (ECM) mode */
+    /*! \brief True if we are in error correcting (ECM) mode */
     int ecm_mode;
     /*! \brief The current bit rate for the fast modem. */
     int fast_bit_rate;

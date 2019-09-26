@@ -40,10 +40,19 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
+#include "spandsp/fast_convert.h"
+#include "spandsp/math_fixed.h"
+#include "spandsp/saturated.h"
 #include "spandsp/complex.h"
 #include "spandsp/vector_float.h"
 #include "spandsp/complex_vector_float.h"
@@ -58,6 +67,7 @@
 #include "spandsp/v29rx.h"
 
 #include "spandsp/private/logging.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/v29rx.h"
 
 #include "v29tx_constellation_maps.h"
@@ -101,6 +111,7 @@ enum
 
 static const uint8_t space_map_9600[20][20] =
 {
+    /*                               Middle V Middle */
     {13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11},
     {13, 13, 13, 13, 13, 13, 13, 12, 12, 12, 12, 12, 12, 11, 11, 11, 11, 11, 11, 11},
     {13, 13, 13, 13, 13, 13, 13,  4,  4,  4,  4,  4,  4, 11, 11, 11, 11, 11, 11, 11},
@@ -110,8 +121,8 @@ static const uint8_t space_map_9600[20][20] =
     {14, 13, 13, 13, 13, 13,  5,  5,  5,  5,  3,  3,  3,  3, 11, 11, 11, 11, 11, 10},
     {14, 14,  6,  6,  6,  5,  5,  5,  5,  5,  3,  3,  3,  3,  3,  2,  2,  2, 10, 10},
     {14, 14,  6,  6,  6,  6,  5,  5,  5,  5,  3,  3,  3,  3,  2,  2,  2,  2, 10, 10},
-    {14, 14,  6,  6,  6,  6,  5,  5,  5,  5,  3,  3,  3,  3,  2,  2,  2,  2, 10, 10},
-    {14, 14,  6,  6,  6,  6,  7,  7,  7,  7,  1,  1,  1,  1,  2,  2,  2,  2, 10, 10},
+    {14, 14,  6,  6,  6,  6,  5,  5,  5,  5,  3,  3,  3,  3,  2,  2,  2,  2, 10, 10}, /* << Middle */
+    {14, 14,  6,  6,  6,  6,  7,  7,  7,  7,  1,  1,  1,  1,  2,  2,  2,  2, 10, 10}, /* << Middle */
     {14, 14,  6,  6,  6,  6,  7,  7,  7,  7,  1,  1,  1,  1,  2,  2,  2,  2, 10, 10},
     {14, 14,  6,  6,  6,  7,  7,  7,  7,  7,  1,  1,  1,  1,  1,  2,  2,  2, 10, 10},
     {14, 15, 15, 15, 15, 15,  7,  7,  7,  7,  1,  1,  1,  1,  9,  9,  9,  9,  9, 10},
@@ -121,6 +132,7 @@ static const uint8_t space_map_9600[20][20] =
     {15, 15, 15, 15, 15, 15, 15,  0,  0,  0,  0,  0,  0,  9,  9,  9,  9,  9,  9,  9},
     {15, 15, 15, 15, 15, 15, 15,  8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,  9},
     {15, 15, 15, 15, 15, 15,  8,  8,  8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9}
+    /*                               Middle ^ Middle */
 };
 
 /* Coefficients for the band edge symbol timing synchroniser (alpha = 0.99) */
@@ -261,11 +273,7 @@ static __inline__ complexi16_t complex_mul_q4_12(const complexi16_t *x, const co
 
 #if defined(SPANDSP_USE_FIXED_POINT)
 static __inline__ complexi16_t equalizer_get(v29_rx_state_t *s)
-#else
-static __inline__ complexf_t equalizer_get(v29_rx_state_t *s)
-#endif
 {
-#if defined(SPANDSP_USE_FIXED_POINT)
     complexi32_t zz;
     complexi16_t z;
 
@@ -274,11 +282,14 @@ static __inline__ complexf_t equalizer_get(v29_rx_state_t *s)
     z.re = zz.re >> FP_SHIFT_FACTOR;
     z.im = zz.im >> FP_SHIFT_FACTOR;
     return z;
+}
 #else
+static __inline__ complexf_t equalizer_get(v29_rx_state_t *s)
+{
     /* Get the next equalized value. */
     return cvec_circular_dot_prodf(s->eq_buf, s->eq_coeff, V29_EQUALIZER_LEN, s->eq_step);
-#endif
 }
+#endif
 /*- End of function --------------------------------------------------------*/
 
 #if defined(SPANDSP_USE_FIXED_POINT)
@@ -353,7 +364,7 @@ static __inline__ void track_carrier(v29_rx_state_t *s, const complexf_t *z, con
        got us in the right ballpark. Now we need to fine tune fairly quickly,
        to get the receovered carrier more precisely on target. Then we need to
        fine tune in a more damped way to keep us on target. The goal is to have
-       things running really well by the time the training is complete. 
+       things running really well by the time the training is complete.
        We assume the frequency of the oscillators at the two ends drift only
        very slowly. The PSTN has rather limited doppler problems. :-) Any
        remaining FDM in the network should also drift slowly. */
@@ -871,7 +882,7 @@ static __inline__ int signal_detect(v29_rx_state_t *s, int16_t amp)
         }
     }
     else
-    { 
+    {
         s->low_samples = 0;
         if (diff > s->high_sample)
             s->high_sample = diff;
@@ -890,14 +901,14 @@ static __inline__ int signal_detect(v29_rx_state_t *s, int16_t amp)
             {
                 /* Count down a short delay, to ensure we push the last
                    few bits through the filters before stopping. */
-                v29_rx_restart(s, s->bit_rate, FALSE);
+                v29_rx_restart(s, s->bit_rate, false);
                 report_status_change(s, SIG_STATUS_CARRIER_DOWN);
                 return 0;
             }
 #if defined(IAXMODEM_STUFF)
-            /* Carrier has dropped, but the put_bit is
-               pending the signal_present delay. */
-            s->carrier_drop_pending = TRUE;
+            /* Carrier has dropped, but the put_bit is pending the
+               signal_present delay. */
+            s->carrier_drop_pending = true;
 #endif
         }
     }
@@ -908,7 +919,7 @@ static __inline__ int signal_detect(v29_rx_state_t *s, int16_t amp)
             return 0;
         s->signal_present = 1;
 #if defined(IAXMODEM_STUFF)
-        s->carrier_drop_pending = FALSE;
+        s->carrier_drop_pending = false;
 #endif
         report_status_change(s, SIG_STATUS_CARRIER_UP);
     }
@@ -962,20 +973,28 @@ SPAN_DECLARE_NONSTD(int) v29_rx(v29_rx_state_t *s, const int16_t amp[], int len)
         /* Symbol timing synchronisation band edge filters */
 #if defined(SPANDSP_USE_FIXED_POINT)
         /* Low Nyquist band edge filter */
-        v = ((s->symbol_sync_low[0]*SYNC_LOW_BAND_EDGE_COEFF_0) >> FP_SHIFT_FACTOR) + ((s->symbol_sync_low[1]*SYNC_LOW_BAND_EDGE_COEFF_1) >> FP_SHIFT_FACTOR) + sample.re;
+        v = ((s->symbol_sync_low[0]*SYNC_LOW_BAND_EDGE_COEFF_0) >> FP_SHIFT_FACTOR)
+          + ((s->symbol_sync_low[1]*SYNC_LOW_BAND_EDGE_COEFF_1) >> FP_SHIFT_FACTOR)
+          + sample.re;
         s->symbol_sync_low[1] = s->symbol_sync_low[0];
         s->symbol_sync_low[0] = v;
         /* High Nyquist band edge filter */
-        v = ((s->symbol_sync_high[0]*SYNC_HIGH_BAND_EDGE_COEFF_0) >> FP_SHIFT_FACTOR) + ((s->symbol_sync_high[1]*SYNC_HIGH_BAND_EDGE_COEFF_1) >> FP_SHIFT_FACTOR) + sample.re;
+        v = ((s->symbol_sync_high[0]*SYNC_HIGH_BAND_EDGE_COEFF_0) >> FP_SHIFT_FACTOR)
+          + ((s->symbol_sync_high[1]*SYNC_HIGH_BAND_EDGE_COEFF_1) >> FP_SHIFT_FACTOR)
+          + sample.re;
         s->symbol_sync_high[1] = s->symbol_sync_high[0];
         s->symbol_sync_high[0] = v;
 #else
         /* Low Nyquist band edge filter */
-        v = s->symbol_sync_low[0]*SYNC_LOW_BAND_EDGE_COEFF_0 + s->symbol_sync_low[1]*SYNC_LOW_BAND_EDGE_COEFF_1 + sample.re;
+        v = s->symbol_sync_low[0]*SYNC_LOW_BAND_EDGE_COEFF_0
+          + s->symbol_sync_low[1]*SYNC_LOW_BAND_EDGE_COEFF_1
+          + sample.re;
         s->symbol_sync_low[1] = s->symbol_sync_low[0];
         s->symbol_sync_low[0] = v;
         /* High Nyquist band edge filter */
-        v = s->symbol_sync_high[0]*SYNC_HIGH_BAND_EDGE_COEFF_0 + s->symbol_sync_high[1]*SYNC_HIGH_BAND_EDGE_COEFF_1 + sample.re;
+        v = s->symbol_sync_high[0]*SYNC_HIGH_BAND_EDGE_COEFF_0
+          + s->symbol_sync_high[1]*SYNC_HIGH_BAND_EDGE_COEFF_1
+          + sample.re;
         s->symbol_sync_high[1] = s->symbol_sync_high[0];
         s->symbol_sync_high[0] = v;
 #endif
@@ -1000,8 +1019,8 @@ SPAN_DECLARE_NONSTD(int) v29_rx(v29_rx_state_t *s, const int16_t amp[], int len)
             v = vec_circular_dot_prodi16(s->rrc_filter, rx_pulseshaper_im[step], V29_RX_FILTER_STEPS, s->rrc_filter_step);
             sample.im = (v*s->agc_scaling) >> 15;
             z = dds_lookup_complexi16(s->carrier_phase);
-            zz.re = ((int32_t) sample.re*(int32_t) z.re - (int32_t) sample.im*(int32_t) z.im) >> 15;
-            zz.im = ((int32_t) -sample.re*(int32_t) z.im - (int32_t) sample.im*(int32_t) z.re) >> 15;
+            zz.re = ((int32_t) sample.re*z.re - (int32_t) sample.im*z.im) >> 15;
+            zz.im = ((int32_t) -sample.re*z.im - (int32_t) sample.im*z.re) >> 15;
 #else
             v = vec_circular_dot_prodf(s->rrc_filter, rx_pulseshaper_im[step], V29_RX_FILTER_STEPS, s->rrc_filter_step);
             sample.im = v*s->agc_scaling;
@@ -1104,7 +1123,7 @@ SPAN_DECLARE(int) v29_rx_restart(v29_rx_state_t *s, int bit_rate, int old_train)
 #if defined(IAXMODEM_STUFF)
     s->high_sample = 0;
     s->low_samples = 0;
-    s->carrier_drop_pending = FALSE;
+    s->carrier_drop_pending = false;
 #endif
     s->old_train = old_train;
 
@@ -1181,7 +1200,7 @@ SPAN_DECLARE(v29_rx_state_t *) v29_rx_init(v29_rx_state_t *s, int bit_rate, put_
     }
     if (s == NULL)
     {
-        if ((s = (v29_rx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (v29_rx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -1196,7 +1215,7 @@ SPAN_DECLARE(v29_rx_state_t *) v29_rx_init(v29_rx_state_t *s, int bit_rate, put_
     /* The thresholds should be on at -26dBm0 and off at -31dBm0 */
     v29_rx_signal_cutoff(s, -28.5f);
 
-    v29_rx_restart(s, bit_rate, FALSE);
+    v29_rx_restart(s, bit_rate, false);
     return s;
 }
 /*- End of function --------------------------------------------------------*/
@@ -1209,7 +1228,7 @@ SPAN_DECLARE(int) v29_rx_release(v29_rx_state_t *s)
 
 SPAN_DECLARE(int) v29_rx_free(v29_rx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

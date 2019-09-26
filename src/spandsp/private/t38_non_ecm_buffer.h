@@ -55,13 +55,13 @@ struct t38_non_ecm_buffer_state_s
     uint8_t flow_control_fill_octet;
     /*! \brief A code for the phase of input buffering, from initial all ones to completion. */
     int input_phase;
-    /*! \brief TRUE is the end of non-ECM data indication has been received. */
+    /*! \brief True is the end of non-ECM data indication has been received. */
     int data_finished;
     /*! \brief The current octet being transmitted from the buffer. */
     unsigned int octet;
     /*! \brief The current bit number in the current non-ECM octet. */
     int bit_no;
-    /*! \brief TRUE if in image data mode, as opposed to TCF mode. */
+    /*! \brief True if in image data mode, as opposed to TCF mode. */
     int image_data_mode;
 
     /*! \brief The number of octets input to the buffer. */

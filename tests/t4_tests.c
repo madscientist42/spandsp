@@ -328,9 +328,9 @@ int main(int argc, char *argv[])
     tests_failed = 0;
     compression = -1;
     compression_step = 0;
-    add_page_headers = FALSE;
-    //overlay_page_headers = FALSE;
-    restart_pages = FALSE;
+    add_page_headers = false;
+    //overlay_page_headers = false;
+    restart_pages = false;
     in_file_name = IN_FILE_NAME;
     decode_file_name = NULL;
     page_header_tz = NULL;
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
     min_row_bits = 50;
     block_size = 1;
     bit_error_rate = 0;
-    dump_as_xxx = FALSE;
+    dump_as_xxx = false;
     while ((opt = getopt(argc, argv, "b:c:d:ehHri:m:t:x")) != -1)
     {
         switch (opt)
@@ -394,15 +394,15 @@ int main(int argc, char *argv[])
             bit_error_rate = 0x3FF;
             break;
         case 'h':
-            add_page_headers = TRUE;
-            //overlay_page_headers = FALSE;
+            add_page_headers = true;
+            //overlay_page_headers = false;
             break;
         case 'H':
-            add_page_headers = TRUE;
-            //overlay_page_headers = TRUE;
+            add_page_headers = true;
+            //overlay_page_headers = true;
             break;
         case 'r':
-            restart_pages = TRUE;
+            restart_pages = true;
             break;
         case 'i':
             in_file_name = optarg;
@@ -414,7 +414,7 @@ int main(int argc, char *argv[])
             page_header_tz = optarg;
             break;
         case 'x':
-            dump_as_xxx = TRUE;
+            dump_as_xxx = true;
             break;
         default:
             //usage();
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
     memset(&send_state, 0, sizeof(send_state));
     memset(&receive_state, 0, sizeof(receive_state));
 
-    end_of_page = FALSE;
+    end_of_page = false;
     if (decode_file_name)
     {
         if (compression < 0)
@@ -729,7 +729,7 @@ int main(int argc, char *argv[])
             }
             t4_rx_start_page(&receive_state);
             detect_page_end(-1000000, compression);
-            page_ended = FALSE;
+            page_ended = false;
             switch (block_size)
             {
             case 0:
@@ -750,7 +750,7 @@ int main(int argc, char *argv[])
                                 bit ^= 1;
                         }
                         if (t4_rx_put_bit(&receive_state, bit & 1))
-                            page_ended = TRUE;
+                            page_ended = true;
                     }
                 }
                 /* Now throw junk at the receive context, to ensure stuff occuring

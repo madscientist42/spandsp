@@ -83,7 +83,7 @@ extern "C"
     \brief Test if logging of a specified severity level is enabled.
     \param s The logging context.
     \param level The severity level to be tested.
-    \return TRUE if logging is enable, else FALSE.
+    \return True if logging is enable.
 */
 SPAN_DECLARE(int) span_log_test(logging_state_t *s, int level);
 
@@ -107,9 +107,15 @@ SPAN_DECLARE(int) span_log(logging_state_t *s, int level, const char *format, ..
 */
 SPAN_DECLARE(int) span_log_buf(logging_state_t *s, int level, const char *tag, const uint8_t *buf, int len);
 
+SPAN_DECLARE(int) span_log_get_level(logging_state_t *s);
+
 SPAN_DECLARE(int) span_log_set_level(logging_state_t *s, int level);
 
+SPAN_DECLARE(const char *) span_log_get_tag(logging_state_t *s);
+
 SPAN_DECLARE(int) span_log_set_tag(logging_state_t *s, const char *tag);
+
+SPAN_DECLARE(const char *) span_log_get_protocol(logging_state_t *s);
 
 SPAN_DECLARE(int) span_log_set_protocol(logging_state_t *s, const char *protocol);
 

@@ -62,7 +62,7 @@ struct v29_rx_state_s
     void *qam_user_data;
 
 #if defined(SPANDSP_USE_FIXED_POINT)
-    /*! \brief The scaling factor accessed by the AGC algorithm. */
+    /*! \brief The scaling factor assessed by the AGC algorithm. */
     int16_t agc_scaling;
     /*! \brief The previous value of agc_scaling, needed to reuse old training. */
     int16_t agc_scaling_save;
@@ -96,7 +96,7 @@ struct v29_rx_state_s
     /*! \brief The root raised cosine (RRC) pulse shaping filter buffer. */
     int16_t rrc_filter[V29_RX_FILTER_STEPS];
 #else
-    /*! \brief The scaling factor accessed by the AGC algorithm. */
+    /*! \brief The scaling factor assessed by the AGC algorithm. */
     float agc_scaling;
     /*! \brief The previous value of agc_scaling, needed to reuse old training. */
     float agc_scaling_save;
@@ -139,7 +139,7 @@ struct v29_rx_state_s
     uint8_t training_scramble_reg;
     /*! \brief The current step in the table of CD constellation positions. */
     int training_cd;
-    /*! \brief TRUE if the previous trained values are to be reused. */
+    /*! \brief True if the previous trained values are to be reused. */
     int old_train;
     /*! \brief The section of the training data we are currently in. */
     int training_stage;
@@ -163,7 +163,7 @@ struct v29_rx_state_s
     /*! \brief The carrier update rate saved for reuse when using short training. */
     int32_t carrier_phase_rate_save;
 
-    /*! \brief A power meter, to measure the HPF'ed signal power in the channel. */    
+    /*! \brief A power meter, to measure the HPF'ed signal power in the channel. */
     power_meter_t power;
     /*! \brief The power meter level at which carrier on is declared. */
     int32_t carrier_on_power;

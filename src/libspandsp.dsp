@@ -101,6 +101,10 @@ SOURCE=.\adsi.c
 # End Source File
 # Begin Source File
 
+SOURCE=.\alloc.c
+# End Source File
+# Begin Source File
+
 SOURCE=.\async.c
 # End Source File
 # Begin Source File
@@ -440,6 +444,10 @@ SOURCE=.\spandsp/ademco_contactid.h
 # Begin Source File
 
 SOURCE=.\spandsp/adsi.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\spandsp/alloc.h
 # End Source File
 # Begin Source File
 
@@ -880,6 +888,18 @@ SOURCE=.\spandsp/private/noise.h
 # Begin Source File
 
 SOURCE=.\spandsp/private/oki_adpcm.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\spandsp/private/playout.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\spandsp/private/plc.h
+# End Source File
+# Begin Source File
+
+SOURCE=.\spandsp/private/power_meter.h
 # End Source File
 # Begin Source File
 

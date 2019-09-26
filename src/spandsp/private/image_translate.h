@@ -1,7 +1,7 @@
 /*
  * SpanDSP - a series of DSP components for telephony
  *
- * private/image_translate.c - Image translation routines for reworking colour
+ * private/image_translate.h - Image translation routines for reworking colour
  *                             and gray scale images to be bi-level images of an
  *                             appropriate size to be FAX compatible.
  *

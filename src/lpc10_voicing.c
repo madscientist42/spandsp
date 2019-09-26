@@ -41,6 +41,11 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
@@ -57,7 +62,7 @@ static void vparms(int32_t vwin[],
                    int32_t half,
                    float *dither,
                    int32_t *mintau,
-                   int32_t *zc, 
+                   int32_t *zc,
                    int32_t *lbe,
                    int32_t *fbe,
                    float *qs,
@@ -207,7 +212,7 @@ void lpc10_voicing(lpc10_encode_state_t *s,
                    const int32_t buflim[],
                    int32_t half,
                    float *minamd,
-                   float *maxamd, 
+                   float *maxamd,
                    int32_t *mintau,
                    float ivrc[],
                    int32_t obound[])
@@ -250,7 +255,7 @@ void lpc10_voicing(lpc10_encode_state_t *s,
     int32_t lbe;
     float snr2;
 
-#if (_MSC_VER >= 1400) 
+#if (_MSC_VER >= 1400)
     __analysis_assume(half >= 0  &&  half < 2);
 #endif
     inbuf_offset = 0;
@@ -305,7 +310,7 @@ void lpc10_voicing(lpc10_encode_state_t *s,
     vparms(vwin,
            &inbuf[inbuf_offset],
            &lpbuf[lpbuf_offset],
-           buflim, 
+           buflim,
            half,
            &s->dither,
            mintau,

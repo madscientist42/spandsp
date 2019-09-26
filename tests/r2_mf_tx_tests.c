@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    r2_mf_tx_init(&gen, FALSE);
+    r2_mf_tx_init(&gen, false);
     for (digit = 0;  digits[digit];  digit++)
     {
         r2_mf_tx_put(&gen, digits[digit]);
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
             sf_writef_short(outhandle, amp, len);
     }
 
-    r2_mf_tx_init(&gen, TRUE);
+    r2_mf_tx_init(&gen, true);
     for (digit = 0;  digits[digit];  digit++)
     {
         r2_mf_tx_put(&gen, digits[digit]);
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
         exit (2);
     }
 
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

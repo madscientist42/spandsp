@@ -94,6 +94,7 @@
 			>
 <File RelativePath="ademco_contactid.c"></File>
 <File RelativePath="adsi.c"></File>
+<File RelativePath="alloc.c"></File>
 <File RelativePath="async.c"></File>
 <File RelativePath="at_interpreter.c"></File>
 <File RelativePath="awgn.c"></File>
@@ -180,6 +181,7 @@
 </Filter><Filter  Name="Header Files">
 <File RelativePath="spandsp/ademco_contactid.h"></File>
 <File RelativePath="spandsp/adsi.h"></File>
+<File RelativePath="spandsp/alloc.h"></File>
 <File RelativePath="spandsp/async.h"></File>
 <File RelativePath="spandsp/arctan2.h"></File>
 <File RelativePath="spandsp/at_interpreter.h"></File>
@@ -290,6 +292,9 @@
 <File RelativePath="spandsp/private/modem_echo.h"></File>
 <File RelativePath="spandsp/private/noise.h"></File>
 <File RelativePath="spandsp/private/oki_adpcm.h"></File>
+<File RelativePath="spandsp/private/playout.h"></File>
+<File RelativePath="spandsp/private/plc.h"></File>
+<File RelativePath="spandsp/private/power_meter.h"></File>
 <File RelativePath="spandsp/private/queue.h"></File>
 <File RelativePath="spandsp/private/schedule.h"></File>
 <File RelativePath="spandsp/private/sig_tone.h"></File>

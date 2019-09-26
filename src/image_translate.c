@@ -2,8 +2,9 @@
  * SpanDSP - a series of DSP components for telephony
  *
  * image_translate.c - Image translation routines for reworking colour
- *                     and gray scale images to be bi-level images of an
- *                     appropriate size to be FAX compatible.
+ *                     and gray scale images to be colour, gray scale or
+ *                     bi-level images of an appropriate size to be FAX
+ *                     compatible.
  *
  * Written by Steve Underwood <steveu@coppice.org>
  *
@@ -46,11 +47,17 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <tiffio.h>
 #include <assert.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/logging.h"
 #include "spandsp/saturated.h"
@@ -367,7 +374,7 @@ SPAN_DECLARE(image_translate_state_t *) image_translate_init(image_translate_sta
 
     if (s == NULL)
     {
-        if ((s = (image_translate_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (image_translate_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -405,10 +412,10 @@ SPAN_DECLARE(image_translate_state_t *) image_translate_init(image_translate_sta
     {
         for (i = 0;  i < 2;  i++)
         {
-            if ((s->raw_pixel_row[i] = (uint8_t *) malloc(s->input_width*s->bytes_per_pixel)) == NULL)
+            if ((s->raw_pixel_row[i] = (uint8_t *) span_alloc(s->input_width*s->bytes_per_pixel)) == NULL)
                 return NULL;
             memset(s->raw_pixel_row[i], 0, s->input_width*s->bytes_per_pixel);
-            if ((s->pixel_row[i] = (uint8_t *) malloc(s->output_width*sizeof(uint8_t))) == NULL)
+            if ((s->pixel_row[i] = (uint8_t *) span_alloc(s->output_width*sizeof(uint8_t))) == NULL)
                 return NULL;
             memset(s->pixel_row[i], 0, s->output_width*sizeof(uint8_t));
         }
@@ -417,7 +424,7 @@ SPAN_DECLARE(image_translate_state_t *) image_translate_init(image_translate_sta
     {
         for (i = 0;  i < 2;  i++)
         {
-            if ((s->pixel_row[i] = (uint8_t *) malloc(s->output_width*s->bytes_per_pixel)) == NULL)
+            if ((s->pixel_row[i] = (uint8_t *) span_alloc(s->output_width*s->bytes_per_pixel)) == NULL)
                 return NULL;
             memset(s->pixel_row[i], 0, s->output_width*s->bytes_per_pixel);
         }
@@ -442,12 +449,12 @@ SPAN_DECLARE(int) image_translate_release(image_translate_state_t *s)
     {
         if (s->raw_pixel_row[i])
         {
-            free(s->raw_pixel_row[i]);
+            span_free(s->raw_pixel_row[i]);
             s->raw_pixel_row[i] = NULL;
         }
         if (s->pixel_row[i])
         {
-            free(s->pixel_row[i]);
+            span_free(s->pixel_row[i]);
             s->pixel_row[i] = NULL;
         }
     }
@@ -460,7 +467,7 @@ SPAN_DECLARE(int) image_translate_free(image_translate_state_t *s)
     int res;
 
     res = image_translate_release(s);
-    free(s);
+    span_free(s);
     return res;
 }
 /*- End of function --------------------------------------------------------*/

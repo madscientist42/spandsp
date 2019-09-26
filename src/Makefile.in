@@ -130,8 +130,8 @@ am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)" \
 	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 libspandsp_la_LIBADD =
-am_libspandsp_la_OBJECTS = ademco_contactid.lo adsi.lo async.lo \
-	at_interpreter.lo awgn.lo bell_r2_mf.lo bert.lo \
+am_libspandsp_la_OBJECTS = ademco_contactid.lo adsi.lo alloc.lo \
+	async.lo at_interpreter.lo awgn.lo bell_r2_mf.lo bert.lo \
 	bit_operations.lo bitstream.lo complex_filters.lo \
 	complex_vector_float.lo complex_vector_int.lo crc.lo \
 	dds_float.lo dds_int.lo dtmf.lo echo.lo fax.lo fax_modems.lo \
@@ -366,6 +366,7 @@ AM_CFLAGS = $(COMP_VENDOR_CFLAGS)
 AM_LDFLAGS = $(COMP_VENDOR_LDFLAGS)
 MAINTAINERCLEANFILES = Makefile.in
 DISTCLEANFILES = $(srcdir)/at_interpreter_dictionary.h \
+                 $(srcdir)/cielab_luts.h \
                  $(srcdir)/math_fixed_tables.h \
                  $(srcdir)/v17_v32bis_rx_fixed_rrc.h \
                  $(srcdir)/v17_v32bis_rx_floating_rrc.h \
@@ -400,6 +401,7 @@ EXTRA_DIST = floating_fudge.h \
              libtiff.2008.vcproj \
              filter_tools.c \
              make_at_dictionary.c \
+             make_cielab_luts.c \
              make_math_fixed_tables.c \
              make_modem_filter.c \
              msvc/config.h \
@@ -431,6 +433,7 @@ AM_CPPFLAGS = -I$(top_builddir)
 lib_LTLIBRARIES = libspandsp.la
 libspandsp_la_SOURCES = ademco_contactid.c \
                         adsi.c \
+                        alloc.c \
                         async.c \
                         at_interpreter.c \
                         awgn.c \
@@ -517,6 +520,7 @@ libspandsp_la_SOURCES = ademco_contactid.c \
 libspandsp_la_LDFLAGS = -version-info @SPANDSP_LT_CURRENT@:@SPANDSP_LT_REVISION@:@SPANDSP_LT_AGE@ $(COMP_VENDOR_LDFLAGS)
 nobase_include_HEADERS = spandsp/ademco_contactid.h \
                          spandsp/adsi.h \
+                         spandsp/alloc.h \
                          spandsp/async.h \
                          spandsp/arctan2.h \
                          spandsp/at_interpreter.h \
@@ -627,6 +631,9 @@ nobase_include_HEADERS = spandsp/ademco_contactid.h \
                          spandsp/private/modem_echo.h \
                          spandsp/private/noise.h \
                          spandsp/private/oki_adpcm.h \
+                         spandsp/private/playout.h \
+                         spandsp/private/plc.h \
+                         spandsp/private/power_meter.h \
                          spandsp/private/queue.h \
                          spandsp/private/schedule.h \
                          spandsp/private/sig_tone.h \
@@ -812,6 +819,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ademco_contactid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/adsi.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/alloc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/async.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/at_interpreter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/awgn.Plo@am__quote@
@@ -1188,6 +1196,9 @@ uninstall-am: uninstall-libLTLIBRARIES uninstall-nobase_includeHEADERS \
 make_at_dictionary$(EXEEXT): $(top_srcdir)/src/make_at_dictionary.c
 	$(CC_FOR_BUILD) -o make_at_dictionary$(EXEEXT) $(top_srcdir)/src/make_at_dictionary.c  -DHAVE_CONFIG_H -I$(top_builddir)/src
 
+make_cielab_luts$(EXEEXT): $(top_srcdir)/src/make_cielab_luts.c
+	$(CC_FOR_BUILD) -o make_cielab_luts$(EXEEXT) $(top_srcdir)/src/make_cielab_luts.c -DHAVE_CONFIG_H -I$(top_builddir)/src -lm
+
 make_math_fixed_tables$(EXEEXT): $(top_srcdir)/src/make_math_fixed_tables.c
 	$(CC_FOR_BUILD) -o make_math_fixed_tables$(EXEEXT) $(top_srcdir)/src/make_math_fixed_tables.c  -DHAVE_CONFIG_H -I$(top_builddir)/src -lm
 
@@ -1214,6 +1225,9 @@ math_fixed_tables.h: make_math_fixed_tables$(EXEEXT)
 t4_rx.$(OBJEXT): spandsp/version.h
 
 t4_rx.lo: spandsp/version.h
+
+cielab_luts.h: make_cielab_luts$(EXEEXT)
+	./make_cielab_luts$(EXEEXT) >cielab_luts.h
 
 v17rx.$(OBJEXT): ${V17_V32BIS_RX_INCL}
 

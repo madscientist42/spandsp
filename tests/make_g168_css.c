@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
     pk = peak(noise_sound, 8192);
     ms = rms(noise_sound, 8192);
     printf("Filtered noise level = %.2fdB, crest factor = %.2fdB\n", rms_to_dbm0(ms), rms_to_db(pk/ms));
-    
+
     for (i = 0;  i < 8192;  i++)
         silence_sound[i] = 0.0;
 
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
     }
 
     fftw_destroy_plan(p);
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

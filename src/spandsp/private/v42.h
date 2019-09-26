@@ -131,9 +131,9 @@ typedef struct
 */
 struct v42_state_s
 {
-    /*! TRUE if we are the calling party, otherwise FALSE. */
+    /*! True if we are the calling party, otherwise false. */
     int calling_party;
-    /*! TRUE if we should detect whether the far end is V.42 capable. FALSE if we go
+    /*! True if we should detect whether the far end is V.42 capable. False if we go
         directly to protocol establishment. */
     int detect;
 

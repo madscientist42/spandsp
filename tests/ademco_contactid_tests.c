@@ -29,9 +29,6 @@
 \section ademco_contactid_tests_page_sec_2 How does it work?
 */
 
-/* Enable the following definition to enable direct probing into the FAX structures */
-//#define WITH_SPANDSP_INTERNALS
-
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -42,10 +39,6 @@
 #include <string.h>
 #include <assert.h>
 #include <sndfile.h>
-
-//#if defined(WITH_SPANDSP_INTERNALS)
-//#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 #include "spandsp-sim.h"
@@ -82,17 +75,17 @@ static int reports_entry = 0;
 
 static int16_t amp[1000000];
 
-int tx_callback_reported = FALSE;
-int rx_callback_reported = FALSE;
+int tx_callback_reported = false;
+int rx_callback_reported = false;
 
-int sending_complete = FALSE;
+int sending_complete = false;
 
 SNDFILE *outhandle;
 
 static void talkoff_tx_callback(void *user_data, int tone, int level, int duration)
 {
     printf("Ademco sender report %d\n", tone);
-    tx_callback_reported = TRUE;
+    tx_callback_reported = true;
 }
 
 static int mitel_cm7291_side_2_and_bellcore_tests(void)
@@ -109,11 +102,11 @@ static int mitel_cm7291_side_2_and_bellcore_tests(void)
     span_log_set_level(logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
     span_log_set_tag(logging, "Ademco-tx");
 
-    tx_callback_reported = FALSE;
+    tx_callback_reported = false;
 
     /* The remainder of the Mitel tape is the talk-off test */
     /* Here we use the Bellcore test tapes (much tougher), in six
-      files - 1 from each side of the original 3 cassette tapes */
+       files - 1 from each side of the original 3 cassette tapes */
     /* Bellcore say you should get no more than 470 false detections with
        a good receiver. Dialogic claim 20. Of course, we can do better than
        that, eh? */
@@ -142,6 +135,7 @@ static int mitel_cm7291_side_2_and_bellcore_tests(void)
         return -1;
     }
     printf("    Passed\n");
+    ademco_contactid_sender_free(sender);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -160,7 +154,7 @@ static void rx_callback(void *user_data, const ademco_contactid_report_t *report
         printf("Report mismatch\n");
         exit(2);
     }
-    rx_callback_reported = TRUE;
+    rx_callback_reported = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -181,11 +175,11 @@ static void tx_callback(void *user_data, int tone, int level, int duration)
         if (++reports_entry < 5)
             ademco_contactid_sender_put(sender, &reports[reports_entry]);
         else
-            sending_complete = TRUE;
+            sending_complete = true;
         break;
     case 0:
         /* Sending failed after retries */
-        sending_complete = TRUE;
+        sending_complete = true;
         break;
     }
 }
@@ -230,8 +224,8 @@ static int end_to_end_tests(void)
     awgn_init_dbm0(&noise_source, 1234567, -50);
     munge = codec_munge_init(MUNGE_CODEC_ALAW, 0);
 
-    sending_complete = FALSE;
-    rx_callback_reported = FALSE;
+    sending_complete = false;
+    rx_callback_reported = false;
 
     for (i = 0;  i < 1000;  i++)
     {
@@ -247,7 +241,7 @@ static int end_to_end_tests(void)
         samples = ademco_contactid_receiver_tx(receiver, amp, SAMPLES_PER_CHUNK);
         for (j = samples;  j < SAMPLES_PER_CHUNK;  j++)
             amp[j] = 0;
-        
+
         /* We add AWGN and codec impairments to the signal, to stress the tone detector. */
         codec_munge(munge, amp, SAMPLES_PER_CHUNK);
         for (j = 0;  j < SAMPLES_PER_CHUNK;  j++)
@@ -261,6 +255,7 @@ static int end_to_end_tests(void)
 
         sf_writef_short(outhandle, sndfile_buf, SAMPLES_PER_CHUNK);
     }
+    codec_munge_free(munge);
     if (!rx_callback_reported)
     {
         fprintf(stderr, "    Report not received\n");
@@ -273,6 +268,8 @@ static int end_to_end_tests(void)
         return -1;
     }
     printf("    Passed\n");
+    ademco_contactid_sender_free(sender);
+    ademco_contactid_receiver_free(receiver);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -330,6 +327,8 @@ static int encode_decode_tests(void)
     printf("'%s'\n", buf);
     printf("\n");
     printf("    Passed\n");
+    ademco_contactid_sender_free(sender);
+    ademco_contactid_receiver_free(receiver);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

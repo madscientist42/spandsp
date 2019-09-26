@@ -41,6 +41,11 @@
 #define GEN_CONST
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
@@ -221,7 +226,7 @@ static float calc_near_line_filter(one_way_line_model_state_t *s, float v)
     if (++p == s->near_filter_len)
         p = 0;
     s->near_buf_ptr = p;
-    
+
     /* Apply the filter */
     sum = 0.0f;
     for (j = 0;  j < s->near_filter_len;  j++)
@@ -230,10 +235,10 @@ static float calc_near_line_filter(one_way_line_model_state_t *s, float v)
         if (++p >= s->near_filter_len)
             p = 0;
     }
-    
+
     /* Add noise */
     sum += awgn(&s->near_noise);
-    
+
     return sum;
 }
 /*- End of function --------------------------------------------------------*/
@@ -250,7 +255,7 @@ static float calc_far_line_filter(one_way_line_model_state_t *s, float v)
     if (++p == s->far_filter_len)
         p = 0;
     s->far_buf_ptr = p;
-    
+
     /* Apply the filter */
     sum = 0.0f;
     for (j = 0;  j < s->far_filter_len;  j++)
@@ -259,7 +264,7 @@ static float calc_far_line_filter(one_way_line_model_state_t *s, float v)
         if (++p >= s->far_filter_len)
             p = 0;
     }
-    
+
     /* Add noise */
     sum += awgn(&s->far_noise);
 
@@ -267,7 +272,7 @@ static float calc_far_line_filter(one_way_line_model_state_t *s, float v)
 }
 /*- End of function --------------------------------------------------------*/
 
-SPAN_DECLARE(void) one_way_line_model(one_way_line_model_state_t *s, 
+SPAN_DECLARE(void) one_way_line_model(one_way_line_model_state_t *s,
                                       int16_t output[],
                                       const int16_t input[],
                                       int samples)
@@ -302,10 +307,10 @@ SPAN_DECLARE(void) one_way_line_model(one_way_line_model_state_t *s,
         in = input[i];
 
         /* Near end analogue section */
-        
+
         /* Line model filters & noise */
         out = calc_near_line_filter(s, in);
-    
+
         /* Long distance digital section */
 
         amp[0] = out;
@@ -319,10 +324,10 @@ SPAN_DECLARE(void) one_way_line_model(one_way_line_model_state_t *s,
             s->bulk_delay_ptr = 0;
 
         /* Far end analogue section */
-        
+
         /* Line model filters & noise */
         out = calc_far_line_filter(s, out);
-    
+
         if (s->mains_interference)
         {
             tone_gen(&s->mains_tone, amp, 1);
@@ -345,14 +350,14 @@ SPAN_DECLARE(void) one_way_line_model_set_mains_pickup(one_way_line_model_state_
 
     if (f)
     {
-        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level - 10.0f), f*3, (int) level, 1, 0, 0, 0, TRUE);
+        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level - 10.0f), f*3, (int) level, 1, 0, 0, 0, true);
         tone_gen_init(&s->mains_tone, &mains_tone_desc);
     }
     s->mains_interference = f;
 }
 /*- End of function --------------------------------------------------------*/
 
-SPAN_DECLARE(void) both_ways_line_model(both_ways_line_model_state_t *s, 
+SPAN_DECLARE(void) both_ways_line_model(both_ways_line_model_state_t *s,
                                         int16_t output1[],
                                         const int16_t input1[],
                                         int16_t output2[],
@@ -454,9 +459,9 @@ SPAN_DECLARE(void) both_ways_line_model_set_mains_pickup(both_ways_line_model_st
 
     if (f)
     {
-        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level1 - 10.0f), f*3, (int) level1, 1, 0, 0, 0, TRUE);
+        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level1 - 10.0f), f*3, (int) level1, 1, 0, 0, 0, true);
         tone_gen_init(&s->line1.mains_tone, &mains_tone_desc);
-        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level2 - 10.0f), f*3, (int) level2, 1, 0, 0, 0, TRUE);
+        tone_gen_descriptor_init(&mains_tone_desc, f, (int) (level2 - 10.0f), f*3, (int) level2, 1, 0, 0, 0, true);
         tone_gen_init(&s->line2.mains_tone, &mains_tone_desc);
     }
     s->line1.mains_interference = f;
@@ -486,7 +491,7 @@ SPAN_DECLARE(one_way_line_model_state_t *) one_way_line_model_init(int model, fl
     /* Put half the noise in each analogue section */
     awgn_init_dbm0(&s->near_noise, 1234567, noise - 3.02f);
     awgn_init_dbm0(&s->far_noise, 1234567, noise - 3.02f);
-    
+
     s->dc_offset = 0.0f;
     s->mains_interference = 0;
 
@@ -494,8 +499,9 @@ SPAN_DECLARE(one_way_line_model_state_t *) one_way_line_model_init(int model, fl
 }
 /*- End of function --------------------------------------------------------*/
 
-SPAN_DECLARE(int) one_way_line_model_release(one_way_line_model_state_t *s)
+SPAN_DECLARE(int) one_way_line_model_free(one_way_line_model_state_t *s)
 {
+    codec_munge_free(s->munge);
     free(s);
     return 0;
 }
@@ -554,13 +560,15 @@ SPAN_DECLARE(both_ways_line_model_state_t *) both_ways_line_model_init(int model
     s->line2.near_co_hybrid_echo = pow(10, echo_level_co2/20.0f);
     s->line1.near_cpe_hybrid_echo = pow(10, echo_level_cpe1/20.0f);
     s->line2.near_cpe_hybrid_echo = pow(10, echo_level_cpe2/20.0f);
-    
+
     return s;
 }
 /*- End of function --------------------------------------------------------*/
 
-SPAN_DECLARE(int) both_ways_line_model_release(both_ways_line_model_state_t *s)
+SPAN_DECLARE(int) both_ways_line_model_free(both_ways_line_model_state_t *s)
 {
+    codec_munge_free(s->line1.munge);
+    codec_munge_free(s->line2.munge);
     free(s);
     return 0;
 }

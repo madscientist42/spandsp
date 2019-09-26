@@ -44,10 +44,6 @@ Both tones and noise are used to check the meter's behaviour.
 #include <time.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -79,7 +75,7 @@ static int power_surge_detector_tests(void)
         exit(2);
     }
     sig = power_surge_detector_init(NULL, -50.0f, 5.0f);
-    prev_signal_present = FALSE;
+    prev_signal_present = false;
 
     phase_rate = dds_phase_rate(450.0f);
     phase_acc = 0;
@@ -105,7 +101,7 @@ static int power_surge_detector_tests(void)
             if (prev_signal_present != signal_present)
             {
                 signal_power = power_surge_detector_current_dbm0(sig);
-                if (signal_present) 
+                if (signal_present)
                 {
                     if (ok == 0  &&  i >= 0  &&  i < 25)
                         ok = 1;
@@ -124,7 +120,7 @@ static int power_surge_detector_tests(void)
                     if (extremes[3] < i)
                         extremes[3] = i;
                     printf("Off at %f (%fdBm0)\n", (sample + i)/8000.0, signal_power);
-                }                    
+                }
                 prev_signal_present = signal_present;
             }
             amp_out[2*i] = amp[i];
@@ -151,6 +147,8 @@ static int power_surge_detector_tests(void)
         exit(2);
     }
     printf("Min on %d, max on %d, min off %d, max off %d\n", extremes[0], extremes[1], extremes[2], extremes[3]);
+    power_surge_detector_free(sig);
+    awgn_free(awgnx);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -172,7 +170,7 @@ static int power_surge_detector_file_test(const char *file)
 
     if ((inhandle = sf_open_telephony_read(file, 1)) == NULL)
     {
-        printf("    Cannot open audio file '%s'\n", file);
+        fprintf(stderr, "    Cannot open audio file '%s'\n", file);
         exit(2);
     }
 
@@ -182,7 +180,7 @@ static int power_surge_detector_file_test(const char *file)
         exit(2);
     }
     sig = power_surge_detector_init(NULL, -50.0f, 6.0f);
-    prev_signal_present = FALSE;
+    prev_signal_present = false;
 
     sample = 0;
     while ((inframes = sf_readf_short(inhandle, amp, 8000)))
@@ -275,7 +273,7 @@ static int power_meter_tests(void)
                              0,
                              0,
                              0,
-                             TRUE);
+                             true);
     tone_gen_init(&gen, &tone_desc);
     len = tone_gen(&gen, amp, 1000);
     for (i = 0;  i < len;  i++)
@@ -344,8 +342,8 @@ int main(int argc, char *argv[])
     int opt;
     const char *in_file;
 
-    basic_tests = TRUE;
-    decode = FALSE;
+    basic_tests = true;
+    decode = false;
     in_file = IN_FILE_NAME;
     while ((opt = getopt(argc, argv, "d:")) != -1)
     {
@@ -353,8 +351,8 @@ int main(int argc, char *argv[])
         {
         case 'd':
             in_file = optarg;
-            basic_tests = FALSE;
-            decode = TRUE;
+            basic_tests = false;
+            decode = true;
             break;
         default:
             //usage();

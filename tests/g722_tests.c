@@ -54,9 +54,6 @@ The file ../test-data/local/short_wb_voice.wav will be compressed to the specifi
 and the resulting audio stored in post_g722.wav.
 */
 
-/* Enable the following definition to enable direct probing into the FAX structures */
-//#define WITH_SPANDSP_INTERNALS
-
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -71,9 +68,7 @@ and the resulting audio stored in post_g722.wav.
 
 #include "spandsp.h"
 
-#if 1 //defined(WITH_SPANDSP_INTERNALS)
 #include "spandsp/private/g722.h"
-#endif
 
 #define G722_SAMPLE_RATE    16000
 
@@ -141,7 +136,7 @@ static const char *decode_test_files[] =
     TESTDATA_DIR "T3L3.RC2",
     TESTDATA_DIR "T3L3.RC3",
     TESTDATA_DIR "T3H3.RC0",
-    
+
     NULL
 };
 
@@ -202,13 +197,13 @@ static int get_test_vector(const char *file, uint16_t buf[], int max_len)
     int octets;
     int i;
     FILE *infile;
-    
+
     if ((infile = fopen(file, "r")) == NULL)
     {
         fprintf(stderr, "    Failed to open '%s'\n", file);
         exit(2);
     }
-    octets = 0;  
+    octets = 0;
     while ((i = get_vector(infile, buf + octets)) > 0)
         octets += i;
     fclose(infile);
@@ -218,8 +213,8 @@ static int get_test_vector(const char *file, uint16_t buf[], int max_len)
 
 static void itu_compliance_tests(void)
 {
-    g722_encode_state_t enc_state;
-    g722_decode_state_t dec_state;
+    g722_encode_state_t *enc_state;
+    g722_decode_state_t *dec_state;
     int i;
     int j;
     int k;
@@ -237,7 +232,7 @@ static void itu_compliance_tests(void)
     for (file = 0;  encode_test_files[file];  file += 2)
     {
         printf("Testing %s -> %s\n", encode_test_files[file], encode_test_files[file + 1]);
-    
+
         /* Get the input data */
         len_data = get_test_vector(encode_test_files[file], (uint16_t *) itu_data, MAX_TEST_VECTOR_LEN);
 
@@ -262,9 +257,9 @@ static void itu_compliance_tests(void)
                 break;
         }
         len = j - i;
-        g722_encode_init(&enc_state, 64000, 0);
-        enc_state.itu_test_mode = TRUE;
-        len2 = g722_encode(&enc_state, compressed, itu_data + i, len);
+        enc_state = g722_encode_init(NULL, 64000, 0);
+        enc_state->itu_test_mode = true;
+        len2 = g722_encode(enc_state, compressed, itu_data + i, len);
 
         /* Check the result against the ITU's reference output data */
         j = 0;
@@ -283,6 +278,7 @@ static void itu_compliance_tests(void)
             exit(2);
         }
         printf("Test passed\n");
+        g722_encode_free(enc_state);
     }
 #endif
 #if 1
@@ -327,10 +323,10 @@ static void itu_compliance_tests(void)
             len = j - i;
             for (k = 0;  k < len;  k++)
                 compressed[k] = itu_data[k + i] >> ((mode == 3)  ?  10  :  (mode == 2)  ?  9  :  8);
-        
-            g722_decode_init(&dec_state, (mode == 3)  ?  48000  :  (mode == 2)  ?  56000  :  64000, 0);
-            dec_state.itu_test_mode = TRUE;
-            len2 = g722_decode(&dec_state, decompressed, compressed, len);
+
+            dec_state = g722_decode_init(NULL, (mode == 3)  ?  48000  :  (mode == 2)  ?  56000  :  64000, 0);
+            dec_state->itu_test_mode = true;
+            len2 = g722_decode(dec_state, decompressed, compressed, len);
 
             /* Check the result against the ITU's reference output data */
             j = 0;
@@ -351,6 +347,7 @@ static void itu_compliance_tests(void)
                 exit(2);
             }
             printf("Test passed\n");
+            g722_decode_free(dec_state);
         }
     }
 #endif
@@ -360,11 +357,11 @@ static void itu_compliance_tests(void)
 
 static void signal_to_distortion_tests(void)
 {
-    g722_encode_state_t enc_state;
-    g722_decode_state_t dec_state;
+    g722_encode_state_t *enc_state;
+    g722_decode_state_t *dec_state;
     swept_tone_state_t *swept;
-    power_meter_t in_meter;
-    power_meter_t out_meter;
+    power_meter_t *in_meter;
+    power_meter_t *out_meter;
     int16_t original[1024];
     uint8_t compressed[1024];
     int16_t decompressed[1024];
@@ -377,44 +374,49 @@ static void signal_to_distortion_tests(void)
 
     /* Test a back to back encoder/decoder pair to ensure we comply with Figure 11/G.722 to
        Figure 16/G.722, Figure A.1/G.722, and Figure A.2/G.722 */
-    g722_encode_init(&enc_state, 64000, 0);
-    g722_decode_init(&dec_state, 64000, 0);
-    power_meter_init(&in_meter, 7);
-    power_meter_init(&out_meter, 7);
+    enc_state = g722_encode_init(NULL, 64000, 0);
+    dec_state = g722_decode_init(NULL, 64000, 0);
+    in_meter = power_meter_init(NULL, 7);
+    out_meter = power_meter_init(NULL, 7);
 
     /* First some silence */
     len = 1024;
     memset(original, 0, len*sizeof(original[0]));
     for (i = 0;  i < len;  i++)
-        in_level = power_meter_update(&in_meter, original[i]);
-    len2 = g722_encode(&enc_state, compressed, original, len);
-    len3 = g722_decode(&dec_state, decompressed, compressed, len2);
+        in_level = power_meter_update(in_meter, original[i]);
+    len2 = g722_encode(enc_state, compressed, original, len);
+    len3 = g722_decode(dec_state, decompressed, compressed, len2);
     out_level = 0;
     for (i = 0;  i < len3;  i++)
-        out_level = power_meter_update(&out_meter, decompressed[i]);
+        out_level = power_meter_update(out_meter, decompressed[i]);
     printf("Silence produces %d at the output\n", out_level);
 
     /* Now a swept tone test */
-    swept = swept_tone_init(NULL, 25.0f, 3500.0f, -10.0f, 60*16000, FALSE);
+    swept = swept_tone_init(NULL, 25.0f, 3500.0f, -10.0f, 60*16000, false);
     do
     {
         len = swept_tone(swept, original, 1024);
         for (i = 0;  i < len;  i++)
-            in_level = power_meter_update(&in_meter, original[i]);
-        len2 = g722_encode(&enc_state, compressed, original, len);
-        len3 = g722_decode(&dec_state, decompressed, compressed, len2);
+            in_level = power_meter_update(in_meter, original[i]);
+        len2 = g722_encode(enc_state, compressed, original, len);
+        len3 = g722_decode(dec_state, decompressed, compressed, len2);
         for (i = 0;  i < len3;  i++)
-            out_level = power_meter_update(&out_meter, decompressed[i]);
+            out_level = power_meter_update(out_meter, decompressed[i]);
         printf("%10d, %10d, %f\n", in_level, out_level, (float) out_level/in_level);
     }
     while (len > 0);
+    swept_tone_free(swept);
+    g722_encode_free(enc_state);
+    g722_decode_free(dec_state);
+    power_meter_free(in_meter);
+    power_meter_free(out_meter);
 }
 /*- End of function --------------------------------------------------------*/
 
 int main(int argc, char *argv[])
 {
-    g722_encode_state_t enc_state;
-    g722_decode_state_t dec_state;
+    g722_encode_state_t *enc_state;
+    g722_decode_state_t *dec_state;
     int len2;
     int len3;
     int i;
@@ -442,12 +444,12 @@ int main(int argc, char *argv[])
     int32_t tone_phase_rate;
 
     bit_rate = 64000;
-    eight_k_in = FALSE;
-    eight_k_out = FALSE;
-    itutests = TRUE;
-    encode = FALSE;
-    decode = FALSE;
-    tone_test = FALSE;
+    eight_k_in = false;
+    eight_k_out = false;
+    itutests = true;
+    encode = false;
+    decode = false;
+    tone_test = false;
     in_file = NULL;
     out_file = NULL;
     while ((opt = getopt(argc, argv, "b:d:e:i:l:o:t")) != -1)
@@ -461,17 +463,17 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "Invalid bit rate selected. Only 48000, 56000 and 64000 are valid.\n");
                 exit(2);
             }
-            itutests = FALSE;
+            itutests = false;
             break;
         case 'd':
             in_file = optarg;
-            decode = TRUE;
-            itutests = FALSE;
+            decode = true;
+            itutests = false;
             break;
         case 'e':
             in_file = optarg;
-            encode = TRUE;
-            itutests = FALSE;
+            encode = true;
+            itutests = false;
             break;
         case 'i':
             i = atoi(optarg);
@@ -497,8 +499,8 @@ int main(int argc, char *argv[])
             eight_k_out = (i == 8000);
             break;
         case 't':
-            tone_test = TRUE;
-            itutests = FALSE;
+            tone_test = true;
+            itutests = false;
             break;
         default:
             //usage();
@@ -519,7 +521,7 @@ int main(int argc, char *argv[])
         if (!decode  &&  !encode)
         {
             decode =
-            encode = TRUE;
+            encode = true;
         }
         if (in_file == NULL)
         {
@@ -561,6 +563,7 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "    Unexpected number of channels in audio file '%s'\n", in_file);
                     exit(2);
                 }
+                enc_state = g722_encode_init(NULL, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
             }
             else
             {
@@ -579,11 +582,8 @@ int main(int argc, char *argv[])
                     fprintf(stderr, "    Unexpected number of channels in audio file '%s'\n", in_file);
                     exit(2);
                 }
+                enc_state = g722_encode_init(NULL, bit_rate, G722_PACKED);
             }
-            if (eight_k_in)
-                g722_encode_init(&enc_state, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
-            else
-                g722_encode_init(&enc_state, bit_rate, G722_PACKED);
         }
         else
         {
@@ -608,9 +608,9 @@ int main(int argc, char *argv[])
                 exit(2);
             }
             if (eight_k_out)
-                g722_decode_init(&dec_state, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
+                dec_state = g722_decode_init(NULL, bit_rate, G722_PACKED | G722_SAMPLE_RATE_8000);
             else
-                g722_decode_init(&dec_state, bit_rate, G722_PACKED);
+                dec_state = g722_decode_init(NULL, bit_rate, G722_PACKED);
         }
         else
         {
@@ -632,7 +632,7 @@ int main(int argc, char *argv[])
                     for (i = 0;  i < samples;  i++)
                         indata[i] = dds_modf(&tone_phase, tone_phase_rate, tone_level, 0);
                 }
-                len2 = g722_encode(&enc_state, adpcmdata, indata, samples);
+                len2 = g722_encode(enc_state, adpcmdata, indata, samples);
             }
             else
             {
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
             }
             if (decode)
             {
-                len3 = g722_decode(&dec_state, outdata, adpcmdata, len2);
+                len3 = g722_decode(dec_state, outdata, adpcmdata, len2);
                 outframes = sf_writef_short(outhandle, outdata, len3);
                 if (outframes != len3)
                 {
@@ -664,6 +664,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "    Cannot close audio file '%s'\n", IN_FILE_NAME);
                 exit(2);
             }
+            g722_encode_free(enc_state);
         }
         else
         {
@@ -676,6 +677,7 @@ int main(int argc, char *argv[])
                 fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);
                 exit(2);
             }
+            g722_decode_free(dec_state);
         }
         else
         {

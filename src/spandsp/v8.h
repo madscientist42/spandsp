@@ -22,7 +22,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 /*! \file */
 
 /*! \page v8_page The V.8 modem negotiation protocol
@@ -141,7 +141,7 @@ SPAN_DECLARE(int) v8_restart(v8_state_t *s,
 /*! Initialise a V.8 context.
     \brief Initialise a V.8 context.
     \param s The V.8 context.
-    \param calling_party TRUE if caller mode, else answerer mode.
+    \param calling_party True if caller mode, else answerer mode.
     \param parms The allowed parameters for the call.
     \param result_handler The callback routine used to handle the results of negotiation.
     \param user_data An opaque pointer passed to the result_handler routine.

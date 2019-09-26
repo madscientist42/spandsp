@@ -42,7 +42,7 @@ extern "C"
 /*! \brief Find the bit position of the highest set bit in a word
     \param bits The word to be searched
     \return The bit number of the highest set bit, or -1 if the word is zero. */
-static __inline__ int top_bit(unsigned int bits)
+static __inline__ int top_bit(uint32_t bits)
 {
 #if defined(SPANDSP_USE_86_ASM)
     int res;
@@ -52,6 +52,13 @@ static __inline__ int top_bit(unsigned int bits)
              " bsrl %[bits],%[res]\n"
              : [res] "=&r" (res)
              : [bits] "rm" (bits));
+    return res;
+#elif defined(__GNUC__x)  &&  (defined(__ARM_ARCH_6__)  ||  defined(__ARM_ARCH_7A__))
+    int res;
+
+    __asm__("clz %[res], %[bits]"
+            : [res] "=r" (res)
+            : [bits] "r" (bits));
     return res;
 #elif defined(__ppc__)  ||   defined(__powerpc__)
     int res;
@@ -141,10 +148,10 @@ static __inline__ int top_bit(unsigned int bits)
 /*! \brief Find the bit position of the lowest set bit in a word
     \param bits The word to be searched
     \return The bit number of the lowest set bit, or -1 if the word is zero. */
-static __inline__ int bottom_bit(unsigned int bits)
+static __inline__ int bottom_bit(uint32_t bits)
 {
     int res;
-    
+
 #if defined(SPANDSP_USE_86_ASM)
     __asm__ (" xorl %[res],%[res];\n"
              " decl %[res];\n"

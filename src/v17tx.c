@@ -39,9 +39,15 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/logging.h"
 #include "spandsp/complex.h"
@@ -70,31 +76,31 @@
 #endif
 
 /*! The nominal frequency of the carrier, in Hertz */
-#define CARRIER_NOMINAL_FREQ        1800.0f
+#define CARRIER_NOMINAL_FREQ            1800.0f
 
 /* Segments of the training sequence */
 /*! The start of the optional TEP, that may preceed the actual training, in symbols */
-#define V17_TRAINING_SEG_TEP_A      0
+#define V17_TRAINING_SEG_TEP_A          0
 /*! The mid point of the optional TEP, that may preceed the actual training, in symbols */
-#define V17_TRAINING_SEG_TEP_B      (V17_TRAINING_SEG_TEP_A + 480)
+#define V17_TRAINING_SEG_TEP_B          (V17_TRAINING_SEG_TEP_A + 480)
 /*! The start of training segment 1, in symbols */
-#define V17_TRAINING_SEG_1          (V17_TRAINING_SEG_TEP_B + 48)
+#define V17_TRAINING_SEG_1              (V17_TRAINING_SEG_TEP_B + 48)
 /*! The start of training segment 2, in symbols */
-#define V17_TRAINING_SEG_2          (V17_TRAINING_SEG_1 + 256)
+#define V17_TRAINING_SEG_2              (V17_TRAINING_SEG_1 + 256)
 /*! The start of training segment 3, in symbols */
-#define V17_TRAINING_SEG_3          (V17_TRAINING_SEG_2 + 2976)
+#define V17_TRAINING_SEG_3              (V17_TRAINING_SEG_2 + 2976)
 /*! The start of training segment 4, in symbols */
-#define V17_TRAINING_SEG_4          (V17_TRAINING_SEG_3 + 64)
+#define V17_TRAINING_SEG_4              (V17_TRAINING_SEG_3 + 64)
 /*! The start of training segment 4 in short training mode, in symbols */
-#define V17_TRAINING_SHORT_SEG_4    (V17_TRAINING_SEG_2 + 38)
+#define V17_TRAINING_SHORT_SEG_4        (V17_TRAINING_SEG_2 + 38)
 /*! The end of the training, in symbols */
-#define V17_TRAINING_END            (V17_TRAINING_SEG_4 + 48)
-#define V17_TRAINING_SHUTDOWN_A     (V17_TRAINING_END + 32)
+#define V17_TRAINING_END                (V17_TRAINING_SEG_4 + 48)
+#define V17_TRAINING_SHUTDOWN_A         (V17_TRAINING_END + 32)
 /*! The end of the shutdown sequence, in symbols */
-#define V17_TRAINING_SHUTDOWN_END   (V17_TRAINING_SHUTDOWN_A + 48)
+#define V17_TRAINING_SHUTDOWN_END       (V17_TRAINING_SHUTDOWN_A + 48)
 
 /*! The 16 bit pattern used in the bridge section of the training sequence */
-#define V17_BRIDGE_WORD             0x8880
+#define V17_BRIDGE_WORD                 0x8880
 
 static __inline__ int scramble(v17_tx_state_t *s, int in_bit)
 {
@@ -243,7 +249,7 @@ static __inline__ complexf_t getbaud(v17_tx_state_t *s)
             {
                 /* Training finished - commence normal operation. */
                 s->current_get_bit = s->get_bit;
-                s->in_training = FALSE;
+                s->in_training = false;
             }
         }
         else
@@ -275,7 +281,7 @@ static __inline__ complexf_t getbaud(v17_tx_state_t *s)
             if (s->status_handler)
                 s->status_handler(s->status_user_data, SIG_STATUS_END_OF_DATA);
             s->current_get_bit = fake_get_bit;
-            s->in_training = TRUE;
+            s->in_training = true;
             bit = 1;
         }
         bits |= (scramble(s, bit) << i);
@@ -417,7 +423,7 @@ SPAN_DECLARE(int) v17_tx_restart(v17_tx_state_t *s, int bit_rate, int tep, int s
     s->rrc_filter_step = 0;
     s->convolution = 0;
     s->scramble_reg = 0x2ECDD5;
-    s->in_training = TRUE;
+    s->in_training = true;
     s->short_train = short_train;
     s->training_step = (tep)  ?  V17_TRAINING_SEG_TEP_A  :  V17_TRAINING_SEG_1;
     s->carrier_phase = 0;
@@ -444,7 +450,7 @@ SPAN_DECLARE(v17_tx_state_t *) v17_tx_init(v17_tx_state_t *s, int bit_rate, int 
     }
     if (s == NULL)
     {
-        if ((s = (v17_tx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (v17_tx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -455,7 +461,7 @@ SPAN_DECLARE(v17_tx_state_t *) v17_tx_init(v17_tx_state_t *s, int bit_rate, int 
     //s->scrambler_tap = 18 - 1;
     s->carrier_phase_rate = dds_phase_ratef(CARRIER_NOMINAL_FREQ);
     v17_tx_power(s, -14.0f);
-    v17_tx_restart(s, bit_rate, tep, FALSE);
+    v17_tx_restart(s, bit_rate, tep, false);
     return s;
 }
 /*- End of function --------------------------------------------------------*/
@@ -468,7 +474,7 @@ SPAN_DECLARE(int) v17_tx_release(v17_tx_state_t *s)
 
 SPAN_DECLARE(int) v17_tx_free(v17_tx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

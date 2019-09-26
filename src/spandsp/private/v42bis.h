@@ -60,7 +60,7 @@ typedef struct
     /*! \brief The maximum amount to be passed to the data handler. */
     int max_output_len;
 
-    /*! \brief TRUE if we are in transparent (i.e. uncompressable) mode */
+    /*! \brief True if we are in transparent (i.e. uncompressable) mode */
     int transparent;
     /*! \brief Next empty dictionary entry */
     uint16_t v42bis_parm_c1;
@@ -92,19 +92,19 @@ typedef struct
     /*! \brief Compression performance metric */
     uint16_t compression_performance;
 
-    /*! \brief Outgoing bit buffer (compression), or incoming bit buffer (decompression) */ 
+    /*! \brief Outgoing bit buffer (compression), or incoming bit buffer (decompression) */
     uint32_t bit_buffer;
-    /*! \brief Outgoing bit count (compression), or incoming bit count (decompression) */ 
+    /*! \brief Outgoing bit count (compression), or incoming bit count (decompression) */
     int bit_count;
 
     /*! \brief The output composition buffer */
     uint8_t output_buf[V42BIS_MAX_OUTPUT_LENGTH];
-    /*! \brief The length of the contents of the output composition buffer */    
+    /*! \brief The length of the contents of the output composition buffer */
     int output_octet_count;
 
     /*! \brief The current value of the escape code */
     uint8_t escape_code;
-    /*! \brief TRUE if we just hit an escape code, and are waiting for the following octet */
+    /*! \brief True if we just hit an escape code, and are waiting for the following octet */
     int escaped;
 } v42bis_comp_state_t;
 

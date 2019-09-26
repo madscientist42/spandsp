@@ -33,7 +33,7 @@ these routines are slow in C, is the lack of direct access to the CPU's "find
 the first 1" instruction. A little in-line assembler fixes that, and the
 conversion routines can be faster than lookup tables, in most real world usage.
 A "find the first 1" instruction is available on most modern CPUs, and is a
-much underused feature. 
+much underused feature.
 
 If an assembly language method of bit searching is not available, these routines
 revert to a method that can be a little slow, so the cache thrashing might not
@@ -82,7 +82,7 @@ extern "C"
  *      segment, but a little inline assembly can fix that on an i386, x86_64 and
  *      many other modern processors.
  */
- 
+
 /*
  * Mu-law is basically as follows:
  *
@@ -137,15 +137,15 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
     }
 
     seg = top_bit(linear | 0xFF) - 7;
-
-    /*
-     * Combine the sign, segment, quantization bits,
-     * and complement the code word.
-     */
     if (seg >= 8)
+    {
         u_val = (uint8_t) (0x7F ^ mask);
+    }
     else
+    {
+        /* Combine the sign, segment, quantization bits, and complement the code word. */
         u_val = (uint8_t) (((seg << 4) | ((linear >> (seg + 3)) & 0xF)) ^ mask);
+    }
 #if defined(G711_ULAW_ZEROTRAP)
     /* Optional ITU trap */
     if (u_val == 0)
@@ -162,7 +162,7 @@ static __inline__ uint8_t linear_to_ulaw(int linear)
 static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
 {
     int t;
-    
+
     /* Complement to obtain normal u-law value. */
     ulaw = ~ulaw;
     /*
@@ -201,13 +201,14 @@ static __inline__ int16_t ulaw_to_linear(uint8_t ulaw)
 */
 static __inline__ uint8_t linear_to_alaw(int linear)
 {
+    uint8_t a_val;
     int mask;
     int seg;
-    
+
     if (linear >= 0)
     {
         /* Sign (bit 7) bit = 1 */
-        mask = G711_ALAW_AMI_MASK | 0x80;
+        mask = 0x80 | G711_ALAW_AMI_MASK;
     }
     else
     {
@@ -220,16 +221,14 @@ static __inline__ uint8_t linear_to_alaw(int linear)
     seg = top_bit(linear | 0xFF) - 7;
     if (seg >= 8)
     {
-        if (linear >= 0)
-        {
-            /* Out of range. Return maximum value. */
-            return (uint8_t) (0x7F ^ mask);
-        }
-        /* We must be just a tiny step below zero */
-        return (uint8_t) (0x00 ^ mask);
+        a_val = (uint8_t) (0x7F ^ mask);
     }
-    /* Combine the sign, segment, and quantization bits. */
-    return (uint8_t) (((seg << 4) | ((linear >> ((seg)  ?  (seg + 3)  :  4)) & 0x0F)) ^ mask);
+    else
+    {
+        /* Combine the sign, segment, and quantization bits. */
+        a_val = (uint8_t) (((seg << 4) | ((linear >> ((seg)  ?  (seg + 3)  :  4)) & 0x0F)) ^ mask);
+    }
+    return a_val;
 }
 /*- End of function --------------------------------------------------------*/
 

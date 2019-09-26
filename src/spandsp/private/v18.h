@@ -22,13 +22,13 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 #if !defined(_SPANDSP_PRIVATE_V18_H_)
 #define _SPANDSP_PRIVATE_V18_H_
 
 struct v18_state_s
 {
-    /*! \brief TRUE if we are the calling modem */
+    /*! \brief True if we are the calling modem */
     int calling_party;
     int mode;
     put_msg_func_t put_msg;
@@ -41,15 +41,15 @@ struct v18_state_s
     } queue;
     tone_gen_descriptor_t alert_tone_desc;
     tone_gen_state_t alert_tone_gen;
-    fsk_tx_state_t fsktx;
-    dtmf_tx_state_t dtmftx;
-    async_tx_state_t asynctx;
+    fsk_tx_state_t fsk_tx;
+    dtmf_tx_state_t dtmf_tx;
+    async_tx_state_t async_tx;
     int baudot_tx_shift;
     int tx_signal_on;
     int byte_no;
 
-    fsk_rx_state_t fskrx;
-    dtmf_rx_state_t dtmfrx;
+    fsk_rx_state_t fsk_rx;
+    dtmf_rx_state_t dtmf_rx;
     int baudot_rx_shift;
     int consecutive_ones;
     uint8_t rx_msg[256 + 1];

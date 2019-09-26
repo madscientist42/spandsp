@@ -94,25 +94,25 @@ int main(int argc, char *argv[])
     int enc_len;
     int dec_len;
 
-    compress = FALSE;
-    decompress = FALSE;
-    log_error = TRUE;
+    compress = false;
+    decompress = false;
+    log_error = true;
     in_file_name = IN_FILE_NAME;
     while ((opt = getopt(argc, argv, "cdi:l")) != -1)
     {
         switch (opt)
         {
         case 'c':
-            compress = TRUE;
+            compress = true;
             break;
         case 'd':
-            decompress = TRUE;
+            decompress = true;
             break;
         case 'i':
             in_file_name = optarg;
             break;
         case 'l':
-            log_error = FALSE;
+            log_error = false;
             break;
         default:
             //usage();
@@ -153,14 +153,14 @@ int main(int argc, char *argv[])
         fprintf(stderr, "    Cannot create audio file '%s'\n", OUT_FILE_NAME);
         exit(2);
     }
-    
-    if ((lpc10_enc_state = lpc10_encode_init(NULL, TRUE)) == NULL)
+
+    if ((lpc10_enc_state = lpc10_encode_init(NULL, true)) == NULL)
     {
         fprintf(stderr, "    Cannot create encoder\n");
         exit(2);
     }
-            
-    if ((lpc10_dec_state = lpc10_decode_init(NULL, TRUE)) == NULL)
+
+    if ((lpc10_dec_state = lpc10_decode_init(NULL, true)) == NULL)
     {
         fprintf(stderr, "    Cannot create decoder\n");
         exit(2);
@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
             exit(2);
         }
     }
-    
+
     if (sf_close_telephony(outhandle))
     {
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);

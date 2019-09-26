@@ -33,11 +33,14 @@
 The supervisory tone generator may be configured to generate most of the world's
 telephone supervisory tones - things like ringback, busy, number unobtainable,
 and so on. It uses tree structure tone descriptions, which can deal with quite
-complex cadence patterns. 
+complex cadence patterns.
 
 \section super_tone_tx_page_sec_2 How does it work?
 
 */
+
+#define SUPER_TONE_TX_MAX_LEVELS    4
+#define SUPER_TONE_TX_MAX_TONES     4
 
 typedef struct super_tone_tx_step_s super_tone_tx_step_t;
 

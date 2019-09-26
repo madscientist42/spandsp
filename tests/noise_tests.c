@@ -36,10 +36,6 @@
 #include <string.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -206,7 +202,7 @@ int main (int argc, char *argv[])
             exit(2);
         }
     }
-    
+
     quality = 7;
     printf("Generating Hoth noise at -15dBOv to file\n");
     level = -15;
@@ -228,9 +224,9 @@ int main (int argc, char *argv[])
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);
         exit(2);
     }
-    
+
     printf("Tests passed.\n");
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

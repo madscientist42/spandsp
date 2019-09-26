@@ -49,10 +49,6 @@ of the degradation in quality caused by the compression.
 #include <time.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -84,18 +80,18 @@ int main(int argc, char *argv[])
     int total_pre_samples;
     int total_compressed_bytes;
     int total_post_samples;
-    const char *in_file_name;
     int variant;
     int chunk_size;
     int enc_chunk_size;
     int log_encoded_data;
     int opt;
+    const char *in_file_name;
 
     variant = IMA_ADPCM_DVI4;
     in_file_name = IN_FILE_NAME;
     chunk_size = 160;
     enc_chunk_size = 0;
-    log_encoded_data = FALSE;
+    log_encoded_data = false;
     while ((opt = getopt(argc, argv, "ac:i:lv")) != -1)
     {
         switch (opt)
@@ -111,7 +107,7 @@ int main(int argc, char *argv[])
             in_file_name = optarg;
             break;
         case 'l':
-            log_encoded_data = TRUE;
+            log_encoded_data = true;
             break;
         case 'v':
             variant = IMA_ADPCM_VDVI;
@@ -140,7 +136,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "    Cannot create encoder\n");
         exit(2);
     }
-        
+
     if ((ima_dec_state = ima_adpcm_init(NULL, variant, enc_chunk_size)) == NULL)
     {
         fprintf(stderr, "    Cannot create decoder\n");
@@ -191,8 +187,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);
         exit(2);
     }
-    ima_adpcm_release(ima_enc_state);
-    ima_adpcm_release(ima_dec_state);
+    ima_adpcm_free(ima_enc_state);
+    ima_adpcm_free(ima_dec_state);
 
     printf("Pre samples: %d\n", total_pre_samples);
     printf("Compressed bytes: %d\n", total_compressed_bytes);
@@ -207,7 +203,7 @@ int main(int argc, char *argv[])
         printf("Tests failed.\n");
         exit(2);
     }
-    
+
     printf("Tests passed.\n");
     return 0;
 }

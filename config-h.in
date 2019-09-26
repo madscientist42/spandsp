@@ -3,6 +3,9 @@
 /* Define to 1 if you have the acosf() function. */
 #undef HAVE_ACOSF
 
+/* Define to 1 if you have the `aligned_alloc' function. */
+#undef HAVE_ALIGNED_ALLOC
+
 /* Define to 1 if you have the asinf() function. */
 #undef HAVE_ASINF
 
@@ -127,6 +130,9 @@
 /* Define to 1 if you have the <math.h> header file. */
 #undef HAVE_MATH_H
 
+/* Define to 1 if you have the `memalign' function. */
+#undef HAVE_MEMALIGN
+
 /* Define to 1 if you have the `memmove' function. */
 #undef HAVE_MEMMOVE
 
@@ -141,6 +147,9 @@
 
 /* Define to 1 if you have the <pcap.h> header file. */
 #undef HAVE_PCAP_H
+
+/* Define to 1 if you have the `posix_memalign' function. */
+#undef HAVE_POSIX_MEMALIGN
 
 /* Define to 1 if you have the powf() function. */
 #undef HAVE_POWF
@@ -169,6 +178,9 @@
 
 /* Define to 1 if you have the <stdbool.h> header file. */
 #undef HAVE_STDBOOL_H
+
+/* Define to 1 if you have the <stdfix.h> header file. */
+#undef HAVE_STDFIX_H
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -282,8 +294,14 @@
 /* Do not expect a misaligned memory access to work correctly */
 #undef SPANDSP_MISALIGNED_ACCESS_FAILS
 
+/* Use the NEON instruction set (ARMV7 only). */
+#undef SPANDSP_USE_ARM_NEON
+
 /* Use the AVX instruction set (i386 and x86_64 only). */
 #undef SPANDSP_USE_AVX
+
+/* Use the AVX2 instruction set (i386 and x86_64 only). */
+#undef SPANDSP_USE_AVX2
 
 /* Use the library symbol export capability of the compiler */
 #undef SPANDSP_USE_EXPORT_CAPABILITY

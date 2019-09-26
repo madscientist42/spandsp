@@ -1,7 +1,7 @@
 /*
  * SpanDSP - a series of DSP components for telephony
  *
- * private/dtmf.h - DTMF tone generation and detection 
+ * private/dtmf.h - DTMF tone generation and detection
  *
  * Written by Steve Underwood <steveu@coppice.org>
  *
@@ -57,7 +57,7 @@ struct dtmf_rx_state_s
     tone_report_func_t realtime_callback;
     /*! An opaque pointer passed to the real time callback function. */
     void *realtime_callback_data;
-    /*! TRUE if dialtone should be filtered before processing */
+    /*! True if dialtone should be filtered before processing */
     int filter_dialtone;
 #if defined(SPANDSP_USE_FIXED_POINT)
     /*! 350Hz filter state for the optional dialtone filter. */

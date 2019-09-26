@@ -147,7 +147,7 @@ SPAN_DECLARE(int) v22bis_request_retrain(v22bis_state_t *s, int bit_rate);
 /*! Request a loopback 2 for a V.22bis modem context.
     \brief Request a loopback 2 for a V.22bis modem context.
     \param s The modem context.
-    \param enable TRUE to enable loopback, or FALSE to disable it.
+    \param enable True to enable loopback, or false to disable it.
     \return 0 for OK, -1 for request reject. */
 SPAN_DECLARE(int) v22bis_remote_loopback(v22bis_state_t *s, int enable);
 
@@ -162,10 +162,11 @@ SPAN_DECLARE(int) v22bis_get_current_bit_rate(v22bis_state_t *s);
     \param s The modem context.
     \param bit_rate The bit rate of the modem. Valid values are 1200 and 2400.
     \param guard The guard tone option. 0 = none, 1 = 550Hz, 2 = 1800Hz.
-    \param calling_party TRUE if this is the calling modem.
+    \param calling_party True if this is the calling modem.
     \param get_bit The callback routine used to get the data to be transmitted.
-    \param put_bit The callback routine used to get the data to be transmitted.
-    \param user_data An opaque pointer, passed in calls to the get and put routines.
+    \param get_bit_user_data An opaque pointer, passed in calls to the get_bit routine.
+    \param put_bit The callback routine used to put the data received.
+    \param put_bit_user_data An opaque pointer, passed in calls to the put_bit routine.
     \return A pointer to the modem context, or NULL if there was a problem. */
 SPAN_DECLARE(v22bis_state_t *) v22bis_init(v22bis_state_t *s,
                                            int bit_rate,

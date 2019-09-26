@@ -22,7 +22,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 /*! \file */
 
 #if defined(HAVE_CONFIG_H)
@@ -31,18 +31,24 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <memory.h>
+#include <string.h>
+#include <limits.h>
 #if defined(HAVE_TGMATH_H)
 #include <tgmath.h>
 #endif
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
-#include <memory.h>
-#include <string.h>
-#include <limits.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/queue.h"
@@ -62,24 +68,27 @@
 #define DEFAULT_DTMF_TX_ON_TIME     50
 #define DEFAULT_DTMF_TX_OFF_TIME    55
 
+#define DTMF_SAMPLES_PER_BLOCK      102
+
 #if defined(SPANDSP_USE_FIXED_POINT)
-#define DTMF_THRESHOLD              10438           /* -42dBm0 */
-#define DTMF_NORMAL_TWIST           6.309f          /* 8dB */
-#define DTMF_REVERSE_TWIST          2.512f          /* 4dB */
-#define DTMF_RELATIVE_PEAK_ROW      6.309f          /* 8dB */
-#define DTMF_RELATIVE_PEAK_COL      6.309f          /* 8dB */
-#define DTMF_TO_TOTAL_ENERGY        83.868f         /* -0.85dB */
-#define DTMF_POWER_OFFSET           68.251f         /* 10*log(256.0*256.0*DTMF_SAMPLES_PER_BLOCK) */
-#define DTMF_SAMPLES_PER_BLOCK      102
-#else
-#define DTMF_THRESHOLD              171032462.0f    /* -42dBm0 [((DTMF_SAMPLES_PER_BLOCK*32768.0/1.4142)*10^((-42 - DBM0_MAX_SINE_POWER)/20.0))^2 => 171032462.0] */
-#define DTMF_NORMAL_TWIST           6.309f          /* 8dB [10^(8/10) => 6.309] */
-#define DTMF_REVERSE_TWIST          2.512f          /* 4dB */
-#define DTMF_RELATIVE_PEAK_ROW      6.309f          /* 8dB */
-#define DTMF_RELATIVE_PEAK_COL      6.309f          /* 8dB */
+/* The fixed point version scales the 16 bit signal down by 7 bits, so the Goertzels will fit in a 32 bit word */
+#define FP_SCALE(x)                 ((int16_t) (x/128.0 + ((x >= 0.0)  ?  0.5  :  -0.5)))
+#define DTMF_THRESHOLD              10438           /* -42dBm0 [((DTMF_SAMPLES_PER_BLOCK*32768.0/1.4142)*10^((-42 - DBM0_MAX_SINE_POWER)/20.0)/128.0)^2]*/
+#define DTMF_NORMAL_TWIST           6.309f          /* 8dB [10.0^(8.0/10.0)] */
+#define DTMF_REVERSE_TWIST          2.512f          /* 4dB [10.0^(4.0/10.0)] */
+#define DTMF_RELATIVE_PEAK_ROW      6.309f          /* 8dB [10.0^(8.0/10.0)] */
+#define DTMF_RELATIVE_PEAK_COL      6.309f          /* 8dB [10.0^(8.0/10.0)] */
 #define DTMF_TO_TOTAL_ENERGY        83.868f         /* -0.85dB [DTMF_SAMPLES_PER_BLOCK*10^(-0.85/10.0)] */
-#define DTMF_POWER_OFFSET           110.395f        /* 10*log(32768.0*32768.0*DTMF_SAMPLES_PER_BLOCK) */
-#define DTMF_SAMPLES_PER_BLOCK      102
+#define DTMF_POWER_OFFSET           68.251f         /* 10*log(((32768.0/128.0)^2)*DTMF_SAMPLES_PER_BLOCK) */
+#else
+#define FP_SCALE(x)                 (x)
+#define DTMF_THRESHOLD              171032462.0f    /* -42dBm0 [((DTMF_SAMPLES_PER_BLOCK*32768.0/1.4142)*10^((-42 - DBM0_MAX_SINE_POWER)/20.0))^2] */
+#define DTMF_NORMAL_TWIST           6.309f          /* 8dB [10.0^(8.0/10.0)] */
+#define DTMF_REVERSE_TWIST          2.512f          /* 4dB [10.0^(4.0/10.0)] */
+#define DTMF_RELATIVE_PEAK_ROW      6.309f          /* 8dB [10.0^(8.0/10.0)] */
+#define DTMF_RELATIVE_PEAK_COL      6.309f          /* 8dB [10.0^(8.0/10.0)] */
+#define DTMF_TO_TOTAL_ENERGY        83.868f         /* -0.85dB [DTMF_SAMPLES_PER_BLOCK*10^(-0.85/10.0)] */
+#define DTMF_POWER_OFFSET           110.395f        /* 10*log((32768.0^2)*DTMF_SAMPLES_PER_BLOCK) */
 #endif
 
 static const float dtmf_row[] =
@@ -92,11 +101,12 @@ static const float dtmf_col[] =
 };
 
 static const char dtmf_positions[] = "123A" "456B" "789C" "*0#D";
+static int dtmf_rx_inited = false;
 
 static goertzel_descriptor_t dtmf_detect_row[4];
 static goertzel_descriptor_t dtmf_detect_col[4];
 
-static int dtmf_tx_inited = FALSE;
+static int dtmf_tx_inited = false;
 static tone_gen_descriptor_t dtmf_digit_tones[16];
 
 SPAN_DECLARE(int) dtmf_rx(dtmf_rx_state_t *s, const int16_t amp[], int samples)
@@ -121,7 +131,6 @@ SPAN_DECLARE(int) dtmf_rx(dtmf_rx_state_t *s, const int16_t amp[], int samples)
     int limit;
     uint8_t hit;
 
-    hit = 0;
     for (sample = 0;  sample < samples;  sample = limit)
     {
         /* The block length is optimised to meet the DTMF specs. */
@@ -129,7 +138,7 @@ SPAN_DECLARE(int) dtmf_rx(dtmf_rx_state_t *s, const int16_t amp[], int samples)
             limit = sample + (DTMF_SAMPLES_PER_BLOCK - s->current_sample);
         else
             limit = samples;
-        /* The following unrolled loop takes only 35% (rough estimate) of the 
+        /* The following unrolled loop takes only 35% (rough estimate) of the
            time of a rolled loop on the machine on which it was developed */
         for (j = sample;  j < limit;  j++)
         {
@@ -296,11 +305,7 @@ SPAN_DECLARE(int) dtmf_rx(dtmf_rx_state_t *s, const int16_t amp[], int samples)
             s->in_digit = hit;
         }
         s->last_hit = hit;
-#if defined(SPANDSP_USE_FIXED_POINT)
-        s->energy = 0;
-#else
-        s->energy = 0.0f;
-#endif
+        s->energy = FP_SCALE(0.0f);
         s->current_sample = 0;
     }
     if (s->current_digits  &&  s->digits_callback)
@@ -323,11 +328,7 @@ SPAN_DECLARE(int) dtmf_rx_fillin(dtmf_rx_state_t *s, int samples)
         goertzel_reset(&s->row_out[i]);
         goertzel_reset(&s->col_out[i]);
     }
-#if defined(SPANDSP_USE_FIXED_POINT)
-    s->energy = 0;
-#else
-    s->energy = 0.0f;
-#endif
+    s->energy = FP_SCALE(0.0f);
     s->current_sample = 0;
     /* Don't update the hit detection. Pretend it never happened. */
     /* TODO: Surely we can be cleverer than this. */
@@ -409,11 +410,10 @@ SPAN_DECLARE(dtmf_rx_state_t *) dtmf_rx_init(dtmf_rx_state_t *s,
                                              void *user_data)
 {
     int i;
-    static int initialised = FALSE;
 
     if (s == NULL)
     {
-        if ((s = (dtmf_rx_state_t *) malloc(sizeof (*s))) == NULL)
+        if ((s = (dtmf_rx_state_t *) span_alloc(sizeof (*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -423,7 +423,7 @@ SPAN_DECLARE(dtmf_rx_state_t *) dtmf_rx_init(dtmf_rx_state_t *s,
     s->digits_callback_data = user_data;
     s->realtime_callback = NULL;
     s->realtime_callback_data = NULL;
-    s->filter_dialtone = FALSE;
+    s->filter_dialtone = false;
     s->normal_twist = DTMF_NORMAL_TWIST;
     s->reverse_twist = DTMF_REVERSE_TWIST;
     s->threshold = DTMF_THRESHOLD;
@@ -431,25 +431,21 @@ SPAN_DECLARE(dtmf_rx_state_t *) dtmf_rx_init(dtmf_rx_state_t *s,
     s->in_digit = 0;
     s->last_hit = 0;
 
-    if (!initialised)
+    if (!dtmf_rx_inited)
     {
         for (i = 0;  i < 4;  i++)
         {
             make_goertzel_descriptor(&dtmf_detect_row[i], dtmf_row[i], DTMF_SAMPLES_PER_BLOCK);
             make_goertzel_descriptor(&dtmf_detect_col[i], dtmf_col[i], DTMF_SAMPLES_PER_BLOCK);
         }
-        initialised = TRUE;
+        dtmf_rx_inited = true;
     }
     for (i = 0;  i < 4;  i++)
     {
         goertzel_init(&s->row_out[i], &dtmf_detect_row[i]);
         goertzel_init(&s->col_out[i], &dtmf_detect_col[i]);
     }
-#if defined(SPANDSP_USE_FIXED_POINT)
-    s->energy = 0;
-#else
-    s->energy = 0.0f;
-#endif
+    s->energy = FP_SCALE(0.0f);
     s->current_sample = 0;
     s->lost_digits = 0;
     s->current_digits = 0;
@@ -466,7 +462,7 @@ SPAN_DECLARE(int) dtmf_rx_release(dtmf_rx_state_t *s)
 
 SPAN_DECLARE(int) dtmf_rx_free(dtmf_rx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -491,10 +487,10 @@ static void dtmf_tx_initialise(void)
                                      DEFAULT_DTMF_TX_OFF_TIME,
                                      0,
                                      0,
-                                     FALSE);
+                                     false);
         }
     }
-    dtmf_tx_inited = TRUE;
+    dtmf_tx_inited = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -510,9 +506,23 @@ SPAN_DECLARE(int) dtmf_tx(dtmf_tx_state_t *s, int16_t amp[], int max_samples)
         /* Deal with the fragment left over from last time */
         len = tone_gen(&s->tones, amp, max_samples);
     }
-    while (len < max_samples  &&  (digit = queue_read_byte(&s->queue.queue)) >= 0)
+
+    while (len < max_samples)
     {
         /* Step to the next digit */
+        if ((digit = queue_read_byte(&s->queue.queue)) < 0)
+        {
+#if 0
+            /* See if we can get some more digits */
+            if (s->callback == NULL)
+                break;
+            s->callback(s->callback_data);
+            if ((digit = queue_read_byte(&s->queue.queue)) < 0)
+                break;
+#else
+            break;
+#endif
+        }
         if (digit == 0)
             continue;
         if ((cp = strchr(dtmf_positions, digit)) == NULL)
@@ -566,7 +576,7 @@ SPAN_DECLARE(dtmf_tx_state_t *) dtmf_tx_init(dtmf_tx_state_t *s)
 {
     if (s == NULL)
     {
-        if ((s = (dtmf_tx_state_t *) malloc(sizeof (*s))) == NULL)
+        if ((s = (dtmf_tx_state_t *) span_alloc(sizeof (*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -583,13 +593,14 @@ SPAN_DECLARE(dtmf_tx_state_t *) dtmf_tx_init(dtmf_tx_state_t *s)
 
 SPAN_DECLARE(int) dtmf_tx_release(dtmf_tx_state_t *s)
 {
+    queue_release(&s->queue.queue);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
 SPAN_DECLARE(int) dtmf_tx_free(dtmf_tx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

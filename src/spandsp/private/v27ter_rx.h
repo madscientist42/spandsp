@@ -130,7 +130,7 @@ struct v27ter_rx_state_s
     int scrambler_pattern_count;
     /*! \brief The current step in the table of BC constellation positions. */
     int training_bc;
-    /*! \brief TRUE if the previous trained values are to be reused. */
+    /*! \brief True if the previous trained values are to be reused. */
     int old_train;
     /*! \brief The section of the training data we are currently in. */
     int training_stage;

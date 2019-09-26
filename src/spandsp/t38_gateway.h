@@ -52,7 +52,7 @@ typedef struct t38_gateway_state_s t38_gateway_state_t;
     \brief T.30 real time frame handler.
     \param s The T.30 context.
     \param user_data An opaque pointer.
-    \param direction TRUE for incoming, FALSE for outgoing.
+    \param direction True for incoming, False for outgoing.
     \param msg The HDLC message.
     \param len The length of the message.
 */
@@ -69,7 +69,7 @@ typedef struct
 {
     /*! \brief The current bit rate for image transfer. */
     int bit_rate;
-    /*! \brief TRUE if error correcting mode is used. */
+    /*! \brief True if error correcting mode is used. */
     int error_correcting_mode;
     /*! \brief The number of pages transferred so far. */
     int pages_transferred;
@@ -131,16 +131,16 @@ SPAN_DECLARE_NONSTD(int) t38_gateway_tx(t38_gateway_state_t *s, int16_t amp[], i
 /*! Control whether error correcting mode (ECM) is allowed.
     \brief Control whether error correcting mode (ECM) is allowed.
     \param s The T.38 context.
-    \param ecm_allowed TRUE is ECM is to be allowed.
+    \param ecm_allowed True is ECM is to be allowed.
 */
 SPAN_DECLARE(void) t38_gateway_set_ecm_capability(t38_gateway_state_t *s, int ecm_allowed);
 
 /*! Select whether silent audio will be sent when transmit is idle.
     \brief Select whether silent audio will be sent when transmit is idle.
     \param s The T.38 context.
-    \param transmit_on_idle TRUE if silent audio should be output when the FAX transmitter is
-           idle. FALSE to transmit zero length audio when the FAX transmitter is idle. The default
-           behaviour is FALSE.
+    \param transmit_on_idle True if silent audio should be output when the FAX transmitter is
+           idle. False to transmit zero length audio when the FAX transmitter is idle. The default
+           behaviour is false.
 */
 SPAN_DECLARE(void) t38_gateway_set_transmit_on_idle(t38_gateway_state_t *s, int transmit_on_idle);
 
@@ -172,14 +172,14 @@ SPAN_DECLARE(void) t38_gateway_set_nsx_suppression(t38_gateway_state_t *s,
 /*! Select whether talker echo protection tone will be sent for the image modems.
     \brief Select whether TEP will be sent for the image modems.
     \param s The T.38 context.
-    \param use_tep TRUE if TEP should be sent.
+    \param use_tep True if TEP should be sent.
 */
 SPAN_DECLARE(void) t38_gateway_set_tep_mode(t38_gateway_state_t *s, int use_tep);
 
 /*! Select whether non-ECM fill bits are to be removed during transmission.
     \brief Select whether non-ECM fill bits are to be removed during transmission.
     \param s The T.38 context.
-    \param remove TRUE if fill bits are to be removed.
+    \param remove True if fill bits are to be removed.
 */
 SPAN_DECLARE(void) t38_gateway_set_fill_bit_removal(t38_gateway_state_t *s, int remove);
 

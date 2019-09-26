@@ -40,6 +40,7 @@
 #endif
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/async.h"
 #include "spandsp/crc.h"
 #include "spandsp/bit_operations.h"
@@ -125,7 +126,7 @@ static __inline__ void octet_count(hdlc_rx_state_t *s)
 
 static void rx_flag_or_abort(hdlc_rx_state_t *s)
 {
-    if ((s->raw_bit_stream & 0x8000))
+    if ((s->raw_bit_stream & 0x0100))
     {
         /* Hit HDLC abort */
         s->rx_aborts++;
@@ -195,8 +196,11 @@ static void rx_flag_or_abort(hdlc_rx_state_t *s)
         {
             /* Check the flags are back-to-back when testing for valid preamble. This
                greatly reduces the chances of false preamble detection, and anything
-               which doesn't send them back-to-back is badly broken. */
-            if (s->num_bits != 7)
+               which doesn't send them back-to-back is badly broken. When we are one
+               flag away from OK we should not apply the back-to-back consition, as
+               between an abort and the following start of frame things might not be
+               octet aligned. */
+            if (s->flags_seen != s->framing_ok_threshold - 1  &&  s->num_bits != 7)
             {
                 /* Don't set the flags seen indicator back to zero too aggressively.
                    We want to pick up with the minimum of discarded data when there
@@ -221,13 +225,22 @@ static void rx_flag_or_abort(hdlc_rx_state_t *s)
 
 static __inline__ void hdlc_rx_put_bit_core(hdlc_rx_state_t *s)
 {
-    if ((s->raw_bit_stream & 0x3F00) == 0x3E00)
+    if ((s->raw_bit_stream & 0x3E00) == 0x3E00)
     {
-        /* Its time to either skip a bit, for stuffing, or process a
-           flag or abort */
-        if ((s->raw_bit_stream & 0x4000))
+        /* There are at least 5 ones in a row. We could be at a:
+            - point where stuffing occurs
+            - a flag
+            - an abort
+            - the result of bit errors */
+        /* Is this a bit to be skipped for destuffing? */
+        if ((s->raw_bit_stream & 0x4100) == 0)
+            return;
+        /* Is this a flag or abort? */
+        if ((s->raw_bit_stream & 0xFE00) == 0x7E00)
+        {
             rx_flag_or_abort(s);
-        return;
+            return;
+        }
     }
     s->num_bits++;
     if (s->flags_seen < s->framing_ok_threshold)
@@ -333,7 +346,7 @@ SPAN_DECLARE(hdlc_rx_state_t *) hdlc_rx_init(hdlc_rx_state_t *s,
 {
     if (s == NULL)
     {
-        if ((s = (hdlc_rx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (hdlc_rx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -369,7 +382,7 @@ SPAN_DECLARE(int) hdlc_rx_release(hdlc_rx_state_t *s)
 
 SPAN_DECLARE(int) hdlc_rx_free(hdlc_rx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -632,7 +645,7 @@ SPAN_DECLARE(hdlc_tx_state_t *) hdlc_tx_init(hdlc_tx_state_t *s,
 {
     if (s == NULL)
     {
-        if ((s = (hdlc_tx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (hdlc_tx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -664,7 +677,7 @@ SPAN_DECLARE(int) hdlc_tx_release(hdlc_tx_state_t *s)
 
 SPAN_DECLARE(int) hdlc_tx_free(hdlc_tx_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

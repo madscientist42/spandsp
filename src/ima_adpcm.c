@@ -42,6 +42,7 @@
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/saturated.h"
 #include "spandsp/ima_adpcm.h"
@@ -193,7 +194,7 @@ static int16_t decode(ima_adpcm_state_t *s, uint8_t adpcm)
     int ss;
     int16_t linear;
 
-    /* e = (adpcm+0.5)*step/4 */
+    /* e = (adpcm + 0.5)*step/4 */
     ss = step_size[s->step_index];
     e = ss >> 3;
     if (adpcm & 0x01)
@@ -208,7 +209,7 @@ static int16_t decode(ima_adpcm_state_t *s, uint8_t adpcm)
     if (adpcm & 0x08)
         e = -e;
     /*endif*/
-    linear = saturate(s->last + e);
+    linear = saturate16(s->last + e);
     s->last = linear;
     s->step_index += step_adjustment[adpcm & 0x07];
     if (s->step_index < 0)
@@ -265,7 +266,7 @@ static uint8_t encode(ima_adpcm_state_t *s, int16_t linear)
     else
         diff = diff + initial_e - e;
     /*endif*/
-    s->last = saturate(diff + s->last);
+    s->last = saturate16(diff + s->last);
     s->step_index += step_adjustment[adpcm & 0x07];
     if (s->step_index < 0)
         s->step_index = 0;
@@ -282,14 +283,14 @@ SPAN_DECLARE(ima_adpcm_state_t *) ima_adpcm_init(ima_adpcm_state_t *s,
 {
     if (s == NULL)
     {
-        if ((s = (ima_adpcm_state_t *) malloc(sizeof(*s))) == NULL)
-            return  NULL;
+        if ((s = (ima_adpcm_state_t *) span_alloc(sizeof(*s))) == NULL)
+            return NULL;
     }
     /*endif*/
     memset(s, 0, sizeof(*s));
     s->variant = variant;
     s->chunk_size = chunk_size;
-    return  s;
+    return s;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -301,7 +302,7 @@ SPAN_DECLARE(int) ima_adpcm_release(ima_adpcm_state_t *s)
 
 SPAN_DECLARE(int) ima_adpcm_free(ima_adpcm_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -503,7 +504,7 @@ SPAN_DECLARE(int) ima_adpcm_encode(ima_adpcm_state_t *s,
         break;
     }
     /*endswitch*/
-    return  bytes;
+    return bytes;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

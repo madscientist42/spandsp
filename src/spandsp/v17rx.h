@@ -34,7 +34,7 @@ The V.17 receiver implements the receive side of a V.17 modem. This can operate
 at data rates of 14400, 12000, 9600 and 7200 bits/second. The audio input is a stream
 of 16 bit samples, at 8000 samples/second. The transmit and receive side of V.17
 modems operate independantly. V.17 is mostly used for FAX transmission over PSTN
-lines, where it provides the standard 14400 bits/second rate. 
+lines, where it provides the standard 14400 bits/second rate.
 
 \section v17rx_page_sec_2 How does it work?
 V.17 uses QAM modulation, at 2400 baud, and trellis coding. Constellations with
@@ -93,7 +93,7 @@ into line. From this point on, a heavily damped integrate and dump approach,
 based on the angular difference between each received constellation position and
 its expected position, is sufficient to track the carrier, and maintain phase
 alignment. A fast rough approximator for the arc-tangent function is adequate
-for the estimation of the angular error. 
+for the estimation of the angular error.
 
 The next phase of the training sequence is a scrambled sequence of two
 particular symbols. We train the T/2 adaptive equalizer using this sequence. The
@@ -102,7 +102,7 @@ converges to the proper generalised solution. At the end of this sequence, the
 equalizer should be sufficiently well adapted that is can correctly resolve the
 full QAM constellation. However, the equalizer continues to adapt throughout
 operation of the modem, fine tuning on the more complex data patterns of the
-full QAM constellation. 
+full QAM constellation.
 
 In the last phase of the training sequence, the modem enters normal data
 operation, with a short defined period of all ones as data. As in most high
@@ -233,7 +233,9 @@ SPAN_DECLARE(v17_rx_state_t *) v17_rx_init(v17_rx_state_t *s, int bit_rate, put_
     \brief Reinitialise an existing V.17 modem receive context.
     \param s The modem context.
     \param bit_rate The bit rate of the modem. Valid values are 7200, 9600, 12000 and 14400.
-    \param short_train TRUE if a short training sequence is expected.
+    \param short_train 0 if a long training sequence is expected.
+                       1 if a short training sequence is expected.
+                       2 if the expected training sequence is automatically selected.
     \return 0 for OK, -1 for bad parameter */
 SPAN_DECLARE(int) v17_rx_restart(v17_rx_state_t *s, int bit_rate, int short_train);
 

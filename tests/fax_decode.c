@@ -85,12 +85,12 @@ static const struct
     {    0, 0, 0, 0}
 };
 
-int decode_test = FALSE;
+int decode_test = false;
 int rx_bits = 0;
 
 t30_state_t t30_dummy;
 t4_rx_state_t t4_rx_state;
-int t4_up = FALSE;
+int t4_up = false;
 
 hdlc_rx_state_t hdlcrx;
 
@@ -104,7 +104,7 @@ int x_resolution = T4_X_RESOLUTION_R8;
 int y_resolution = T4_Y_RESOLUTION_STANDARD;
 int image_width = 1728;
 int octets_per_ecm_frame = 256;
-int error_correcting_mode = FALSE;
+int error_correcting_mode = false;
 int current_fallback = 0;
 
 static void decode_20digit_msg(const uint8_t *pkt, int len)
@@ -140,7 +140,7 @@ static void print_frame(const char *io, const uint8_t *fr, int frlen)
     const char *country;
     const char *vendor;
     const char *model;
-    
+
     fprintf(stderr, "%s %s:", io, t30_frametype(fr[2]));
     for (i = 2;  i < frlen;  i++)
         fprintf(stderr, " %02x", fr[i]);
@@ -233,7 +233,7 @@ static int check_rx_dcs(const uint8_t *msg, int len)
         printf("Remote asked for a modem standard we do not support\n");
     error_correcting_mode = ((dcs_frame[6] & DISBIT3) != 0);
 
-    //v17_rx_restart(&v17, fallback_sequence[fallback_entry].bit_rate, FALSE);
+    //v17_rx_restart(&v17, fallback_sequence[fallback_entry].bit_rate, false);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -297,7 +297,7 @@ static void t4_begin(void)
     t4_rx_set_image_width(&t4_rx_state, image_width);
 
     t4_rx_start_page(&t4_rx_state);
-    t4_up = TRUE;
+    t4_up = true;
 
     for (i = 0;  i < 256;  i++)
         ecm_len[i] = -1;
@@ -328,7 +328,7 @@ static void t4_end(void)
     fprintf(stderr, "Image resolution = %dx%d\n", stats.x_resolution, stats.y_resolution);
     fprintf(stderr, "Bad rows = %d\n", stats.bad_rows);
     fprintf(stderr, "Longest bad row run = %d\n", stats.longest_bad_row_run);
-    t4_up = FALSE;
+    t4_up = false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -499,7 +499,7 @@ int main(int argc, char *argv[])
     span_log_init(&t30_dummy.logging, SPAN_LOG_FLOW, NULL);
     span_log_set_protocol(&t30_dummy.logging, "T.30");
 
-    hdlc_rx_init(&hdlcrx, FALSE, TRUE, 5, hdlc_accept, NULL);
+    hdlc_rx_init(&hdlcrx, false, true, 5, hdlc_accept, NULL);
     fsk = fsk_rx_init(NULL, &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, v21_put_bit, NULL);
     v17 = v17_rx_init(NULL, 14400, v17_put_bit, NULL);
     v29 = v29_rx_init(NULL, 9600, v29_put_bit, NULL);
@@ -532,7 +532,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Failed to init\n");
         exit(0);
     }
-        
+
     for (;;)
     {
         len = sf_readf_short(inhandle, amp, SAMPLES_PER_CHUNK);
@@ -550,7 +550,7 @@ int main(int argc, char *argv[])
         fprintf(stderr, "    Cannot close audio file '%s'\n", filename);
         exit(2);
     }
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

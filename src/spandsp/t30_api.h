@@ -28,10 +28,32 @@
 #if !defined(_SPANDSP_T30_API_H_)
 #define _SPANDSP_T30_API_H_
 
+enum
+{
+    T33_NONE = 0,
+    T33_SST = 1,
+    T33_EXT = 2
+};
+
 #if defined(__cplusplus)
 extern "C"
 {
 #endif
+
+/*! Get the specified field from a T.33 formatted string.
+    \brief Get the specified field from a T.33 formatted string.
+    \param field The extracted field.
+    \param t33 The T.33 formatted string.
+    \param field_no The field number to extract. The first field is 0.
+    \return The extracted field type. -1 indicates a over length or badly formatted field. */
+SPAN_DECLARE(int) t33_sub_address_extract_field(uint8_t field[21], const uint8_t t33[], int field_no);
+
+/*! Append the specified field to a T.33 formatted string.
+    \brief Append the specified field to a T.33 formatted string.
+    \param t33 The T.33 formatted string.
+    \param field The field to be adppended.
+    \param type The type of the field to be appended. */
+SPAN_DECLARE(void) t33_sub_address_add_field(uint8_t t33[], const uint8_t field[], int type);
 
 /*! Set the transmitted NSF frame to be associated with a T.30 context.
     \brief Set the transmitted NSF frame to be associated with a T.30 context.
@@ -363,7 +385,7 @@ SPAN_DECLARE(size_t) t30_get_rx_csa(t30_state_t *s, int *type, const char *addre
 /*! Set page header extends or overlays the image mode.
     \brief Set page header overlay mode.
     \param s The T.30 context.
-    \param header_overlays_image TRUE for overlay, or FALSE for extend the page. */
+    \param header_overlays_image True for overlay, or false for extend the page. */
 SPAN_DECLARE(int) t30_set_tx_page_header_overlays_image(t30_state_t *s, int header_overlays_image);
 
 /*! Set the transmitted header information associated with a T.30 context.
@@ -426,13 +448,13 @@ SPAN_DECLARE(void) t30_set_tx_file(t30_state_t *s, const char *file, int start_p
 /*! Set Internet aware FAX (IAF) mode.
     \brief Set Internet aware FAX (IAF) mode.
     \param s The T.30 context.
-    \param iaf TRUE for IAF, or FALSE for non-IAF. */
+    \param iaf True for IAF, or false for non-IAF. */
 SPAN_DECLARE(void) t30_set_iaf_mode(t30_state_t *s, int iaf);
 
 /*! Specify if error correction mode (ECM) is allowed by a T.30 context.
     \brief Select ECM capability.
     \param s The T.30 context.
-    \param enabled TRUE for ECM capable, FALSE for not ECM capable.
+    \param enabled True for ECM capable, or false for not ECM capable.
     \return 0 if OK, else -1. */
 SPAN_DECLARE(int) t30_set_ecm_capability(t30_state_t *s, int enabled);
 
@@ -537,6 +559,12 @@ SPAN_DECLARE(void) t30_set_document_handler(t30_state_t *s, t30_document_handler
     \param handler The callback function.
     \param user_data An opaque pointer passed to the callback function. */
 SPAN_DECLARE(void) t30_set_real_time_frame_handler(t30_state_t *s, t30_real_time_frame_handler_t *handler, void *user_data);
+
+#if 0
+SPAN_DECLARE(void) t30_set_document_get_handler(t30_state_t *s, t30_document_get_handler_t handler, void *user_data);
+
+SPAN_DECLARE(void) t30_set_document_put_handler(t30_state_t *s, t30_document_put_handler_t handler, void *user_data);
+#endif
 
 /*! Get a pointer to the logging context associated with a T.30 context.
     \brief Get a pointer to the logging context associated with a T.30 context.

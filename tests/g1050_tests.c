@@ -42,10 +42,6 @@
 #define GEN_CONST
 #endif
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -91,7 +87,7 @@ int main(int argc, char *argv[])
 #endif
 
 #if defined(ENABLE_GUI)
-    use_gui = FALSE;
+    use_gui = false;
 #endif
     model_no = MODEL_NO;
     speed_pattern_no = SPEED_PATTERN_NO;
@@ -102,7 +98,7 @@ int main(int argc, char *argv[])
         {
         case 'g':
 #if defined(ENABLE_GUI)
-            use_gui = TRUE;
+            use_gui = true;
 #else
             fprintf(stderr, "Graphical monitoring not available\n");
             exit(2);
@@ -237,6 +233,8 @@ int main(int argc, char *argv[])
         exit(2);
     }
     printf("%.3f%% of packets lost\n", 100.0*(packets_put - packets_really_put)/packets_put);
+    g1050_free(s);
+    free(packet_arrival_times);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

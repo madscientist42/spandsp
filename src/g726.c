@@ -64,9 +64,15 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/dc_restore.h"
 #include "spandsp/bitstream.h"
 #include "spandsp/bit_operations.h"
@@ -290,7 +296,7 @@ static int step_size(g726_state_t *s)
  */
 static int16_t quantize(int d,                  /* Raw difference signal sample */
                         int y,                  /* Step size multiplier */
-                        const int table[],     /* quantization table */
+                        const int table[],      /* quantization table */
                         int quantizer_states)   /* table size of int16_t integers */
 {
     int16_t dqm;    /* Magnitude of 'd' */
@@ -409,11 +415,11 @@ static void update(g726_state_t *s,
     thr = (ylint > 9)  ?  (31 << 10)  :  ((32 + ylfrac) << ylint);
     dqthr = (thr + (thr >> 1)) >> 1;            /* dqthr = 0.75 * thr */
     if (!s->td)                                 /* signal supposed voice */
-        tr = FALSE;
+        tr = false;
     else if (mag <= dqthr)                      /* supposed data, but small mag */
-        tr = FALSE;                             /* treated as voice */
+        tr = false;                             /* treated as voice */
     else                                        /* signal is data (modem) */
-        tr = TRUE;
+        tr = true;
 
     /*
      * Quantizer scale factor adaptation.
@@ -564,11 +570,11 @@ static void update(g726_state_t *s,
 
     /* TONE */
     if (tr)                 /* this sample has been treated as data */
-        s->td = FALSE;      /* next one will be treated as voice */
+        s->td = false;      /* next one will be treated as voice */
     else if (a2p < -11776)  /* small sample-to-sample correlation */
-        s->td = TRUE;       /* signal may be data */
+        s->td = true;       /* signal may be data */
     else                    /* signal is voice */
-        s->td = FALSE;
+        s->td = false;
 
     /* Adaptation speed control. */
     /* FILTA */
@@ -696,7 +702,7 @@ static uint8_t g726_16_encoder(g726_state_t *s, int16_t amp)
     int16_t dqsez;
     int16_t dq;
     int16_t i;
-    
+
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
     se = sei >> 1;
@@ -712,7 +718,7 @@ static uint8_t g726_16_encoder(g726_state_t *s, int16_t amp)
 
     /* Pole prediction difference */
     dqsez = sr + (sezi >> 1) - se;
-    
+
     update(s, y, g726_16_witab[i], g726_16_fitab[i], dq, sr, dqsez);
     return (uint8_t) i;
 }
@@ -774,7 +780,7 @@ static uint8_t g726_24_encoder(g726_state_t *s, int16_t amp)
     int16_t dq;
     int16_t i;
     int y;
-    
+
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
     se = sei >> 1;
@@ -790,7 +796,7 @@ static uint8_t g726_24_encoder(g726_state_t *s, int16_t amp)
 
     /* Pole prediction difference */
     dqsez = sr + (sezi >> 1) - se;
-    
+
     update(s, y, g726_24_witab[i], g726_24_fitab[i], dq, sr, dqsez);
     return (uint8_t) i;
 }
@@ -852,7 +858,7 @@ static uint8_t g726_32_encoder(g726_state_t *s, int16_t amp)
     int16_t dq;
     int16_t i;
     int y;
-    
+
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
     se = sei >> 1;
@@ -931,7 +937,7 @@ static uint8_t g726_40_encoder(g726_state_t *s, int16_t amp)
     int16_t dq;
     int16_t i;
     int y;
-    
+
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
     se = sei >> 1;
@@ -971,7 +977,7 @@ static int16_t g726_40_decoder(g726_state_t *s, uint8_t code)
     code &= 0x1F;
     sezi = predictor_zero(s);
     sei = sezi + predictor_pole(s);
-        
+
     y = step_size(s);
     dq = reconstruct(code & 0x10, g726_40_dqlntab[code], y);
 
@@ -1003,8 +1009,8 @@ SPAN_DECLARE(g726_state_t *) g726_init(g726_state_t *s, int bit_rate, int ext_co
         return NULL;
     if (s == NULL)
     {
-        if ((s = (g726_state_t *) malloc(sizeof(*s))) == NULL)
-            return  NULL;
+        if ((s = (g726_state_t *) span_alloc(sizeof(*s))) == NULL)
+            return NULL;
     }
     s->yl = 34816;
     s->yu = 544;
@@ -1025,7 +1031,7 @@ SPAN_DECLARE(g726_state_t *) g726_init(g726_state_t *s, int bit_rate, int ext_co
         s->b[i] = 0;
         s->dq[i] = 32;
     }
-    s->td = FALSE;
+    s->td = false;
     switch (bit_rate)
     {
     case 16000:
@@ -1063,7 +1069,7 @@ SPAN_DECLARE(int) g726_release(g726_state_t *s)
 
 SPAN_DECLARE(int) g726_free(g726_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

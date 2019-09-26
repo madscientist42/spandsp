@@ -34,9 +34,6 @@ tests, these tests do not include line modelling.
 \section adsi_tests_page_sec_2 How does it work?
 */
 
-/* Enable the following definition to enable direct probing into the FAX structures */
-//#define WITH_SPANDSP_INTERNALS
-
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -48,16 +45,12 @@ tests, these tests do not include line modelling.
 #include <assert.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
-#define OUTPUT_FILE_NAME    "adsi.wav"
+#define OUTPUT_FILE_NAME            "adsi.wav"
 
-#define BLOCK_LEN           160
+#define BLOCK_LEN                   160
 
 #define MITEL_DIR                   "../test-data/mitel/"
 #define BELLCORE_DIR                "../test-data/bellcore/"
@@ -77,16 +70,16 @@ const char *bellcore_files[] =
 char *decode_test_file = NULL;
 
 int errors = 0;
-int basic_testing = FALSE;
+int basic_testing = false;
 
 adsi_rx_state_t *rx_adsi;
 adsi_tx_state_t *tx_adsi;
 
 int current_standard = 0;
 int good_message_received;
-int log_audio = FALSE;
+int log_audio = false;
 SNDFILE *outhandle = NULL;
-int short_preamble = FALSE;
+int short_preamble = false;
 
 static int adsi_create_message(adsi_tx_state_t *s, uint8_t *msg)
 {
@@ -240,9 +233,9 @@ static void put_adsi_msg(void *user_data, const uint8_t *msg, int len)
     int field_len;
     int message_type;
     uint8_t body[256];
-    
+
     printf("Good message received (%d bytes)\n", len);
-    good_message_received = TRUE;
+    good_message_received = true;
     for (i = 0;  i < len;  i++)
     {
         printf("%02x ", msg[i]);
@@ -632,7 +625,7 @@ static void basic_tests(int standard)
     int push;
     int i;
 
-    basic_testing = TRUE;
+    basic_testing = true;
     printf("Testing %s\n", adsi_standard_to_str(standard));
     tx_adsi = adsi_tx_init(NULL, standard);
     if (short_preamble)
@@ -640,7 +633,7 @@ static void basic_tests(int standard)
     rx_adsi = adsi_rx_init(NULL, standard, put_adsi_msg, NULL);
 
     /* Fake an OK condition for the first message test */
-    good_message_received = TRUE;
+    good_message_received = true;
     push = 0;
     for (i = 0;  i < 100000;  i++)
     {
@@ -660,7 +653,7 @@ static void basic_tests(int standard)
                     printf("No message received %s (%d)\n", adsi_standard_to_str(standard), i);
                     exit(2);
                 }
-                good_message_received = FALSE;
+                good_message_received = false;
                 adsi_msg_len = adsi_create_message(tx_adsi, adsi_msg);
                 adsi_msg_len = adsi_tx_put_message(tx_adsi, adsi_msg, adsi_msg_len);
             }
@@ -685,7 +678,7 @@ static void basic_tests(int standard)
     }
     adsi_rx_free(rx_adsi);
     adsi_tx_free(tx_adsi);
-    basic_testing = FALSE;
+    basic_testing = false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -741,28 +734,28 @@ int main(int argc, char *argv[])
     int enable_basic_tests;
     int enable_talkoff_tests;
 
-    log_audio = FALSE;
+    log_audio = false;
     decode_test_file = NULL;
     test_standard = -1;
-    short_preamble = FALSE;
-    enable_basic_tests = TRUE;
-    enable_talkoff_tests = FALSE;
+    short_preamble = false;
+    enable_basic_tests = true;
+    enable_talkoff_tests = false;
     while ((opt = getopt(argc, argv, "bd:lps:t")) != -1)
     {
         switch (opt)
         {
         case 'b':
-            enable_basic_tests = TRUE;
-            enable_talkoff_tests = FALSE;
+            enable_basic_tests = true;
+            enable_talkoff_tests = false;
             break;
         case 'd':
             decode_test_file = optarg;
             break;
         case 'l':
-            log_audio = TRUE;
+            log_audio = true;
             break;
         case 'p':
-            short_preamble = TRUE;
+            short_preamble = true;
             break;
         case 's':
             if (strcasecmp("CLASS", optarg) == 0)
@@ -781,8 +774,8 @@ int main(int argc, char *argv[])
                 test_standard = atoi(optarg);
             break;
         case 't':
-            enable_basic_tests = FALSE;
-            enable_talkoff_tests = TRUE;
+            enable_basic_tests = false;
+            enable_talkoff_tests = true;
             break;
         default:
             //usage();
@@ -791,7 +784,7 @@ int main(int argc, char *argv[])
         }
     }
     outhandle = NULL;
-    
+
     tdd_character_set_tests();
 
     if (decode_test_file)
@@ -808,10 +801,10 @@ int main(int argc, char *argv[])
             current_standard = test_standard;
 
         rx_adsi = adsi_rx_init(NULL, current_standard, put_adsi_msg, NULL);
-#if 0
-        span_log_set_level(rx_adsi.logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
-        span_log_set_tag(rx_adsi.logging, "ADSI");
-#endif
+
+        span_log_set_level(adsi_rx_get_logging_state(rx_adsi), SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
+        span_log_set_tag(adsi_rx_get_logging_state(rx_adsi), "ADSI");
+
         for (;;)
         {
             len = sf_readf_short(inhandle, amp, BLOCK_LEN);

@@ -35,9 +35,7 @@
 #include <stdio.h>
 #include <string.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 
@@ -64,7 +62,7 @@ int main(int argc, char *argv[])
     double o;
     double error;
     int bins[65536];
-    awgn_state_t noise_source;
+    awgn_state_t *noise_source;
 
     /* Generate noise at several RMS levels between -50dBm and 0dBm. Noise is
        generated for a large number of samples (1,000,000), and the RMS value
@@ -77,18 +75,22 @@ int main(int argc, char *argv[])
         clip_high = 0;
         clip_low = 0;
         total = 0.0;
-        awgn_init_dbm0(&noise_source, idum, (float) j);
+        if ((noise_source = awgn_init_dbm0(NULL, idum, (float) j)) == NULL)
+        {
+            printf("Failed to allocate AWGN source\n");
+            exit(2);
+        }
         total_samples = 1000000;
         for (i = 0;  i < total_samples;  i++)
         {
-            value = awgn(&noise_source);
+            value = awgn(noise_source);
             if (value == 32767)
                 clip_high++;
             else if (value == -32768)
                 clip_low++;
             total += ((double) value)*((double) value);
         }
-        error = 100.0*(1.0 - sqrt(total/total_samples)/noise_source.rms);
+        error = 100.0*(1.0 - sqrt(total/total_samples)/noise_source->rms);
         printf("RMS = %.3f (expected %d) %.2f%% error [clipped samples %d+%d]\n",
                10.0*log10((total/total_samples)/(32768.0*32768.0) + 1.0e-10) + DBM0_MAX_POWER,
                j,
@@ -101,6 +103,7 @@ int main(int argc, char *argv[])
             printf("Test failed.\n");
             exit(2);
         }
+        awgn_free(noise_source);
     }
     /* Now look at the statistical spread of the results, by collecting data in
        bins from a large number of samples. Use a fairly high noise level, but
@@ -109,18 +112,22 @@ int main(int argc, char *argv[])
     memset(bins, 0, sizeof(bins));
     clip_high = 0;
     clip_low = 0;
-    awgn_init_dbm0(&noise_source, idum, -15);
+    if ((noise_source = awgn_init_dbm0(NULL, idum, -15.0)) == NULL)
+    {
+        printf("Failed to allocate AWGN source\n");
+        exit(2);
+    }
     total_samples = 10000000;
     for (i = 0;  i < total_samples;  i++)
     {
-        value = awgn(&noise_source);
+        value = awgn(noise_source);
         if (value == 32767)
             clip_high++;
         else if (value == -32768)
             clip_low++;
         bins[value + 32768]++;
     }
-    o = noise_source.rms;
+    o = noise_source->rms;
     for (i = 0;  i < 65536 - 10;  i++)
     {
         x = i - 32768;
@@ -136,9 +143,9 @@ int main(int argc, char *argv[])
         /* Now send it out for graphing. */
         printf("%6d %.7f %.7f\n", i - 32768, x, p);
     }
-    
+    awgn_free(noise_source);
     printf("Tests passed.\n");
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

@@ -97,7 +97,7 @@ static void decode_log_area_ratios(int16_t LARc[8], int16_t *LARpp)
    analysis and synthesis filters operate with four different sets of
    coefficients, derived from the previous set of decoded LARs(LARpp(j - 1))
    and the actual set of decoded LARs (LARpp(j))
-  
+
    (Initial value: LARpp(j - 1)[1..8] = 0.)
 */
 
@@ -242,8 +242,8 @@ static void short_term_analysis_filtering(gsm0610_state_t *s,
             rpi = *rpx++;
             u_out = ui + (((rpi*di) + 0x4000) >> 15);
             di = di + (((rpi*ui) + 0x4000) >> 15);
-            u_out = saturate(u_out);
-            di = saturate(di);
+            u_out = saturate16(u_out);
+            di = saturate16(di);
         }
         /*endfor*/
         amp[i] = (int16_t) di;

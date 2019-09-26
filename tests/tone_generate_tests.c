@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
                              200,
                              300,
                              400,
-                             FALSE);
+                             false);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
                              300,
                              200,
                              100,
-                             TRUE);
+                             true);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
                              200,
                              300,
                              400,
-                             TRUE);
+                             true);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
                              200,
                              300,
                              400,
-                             TRUE);
+                             true);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
                              0,
                              0,
                              0,
-                             FALSE);
+                             false);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -182,7 +182,7 @@ int main(int argc, char *argv[])
                              0,
                              0,
                              0,
-                             FALSE);
+                             false);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
                              200,
                              300,
                              400,
-                             TRUE);
+                             true);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
                              200,
                              300,
                              400,
-                             TRUE);
+                             true);
     tone_gen_init(&tone_state, &tone_desc);
 
     for (i = 0;  i < 1000;  i++)
@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
         exit (2);
     }
 
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

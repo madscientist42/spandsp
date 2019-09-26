@@ -77,10 +77,10 @@ g1050_state_t *path_b_to_a;
 
 double when = 0.0;
 
-int done[2] = {FALSE, FALSE};
-int succeeded[2] = {FALSE, FALSE};
+int done[2] = {false, false};
+int succeeded[2] = {false, false};
 
-int simulate_incrementing_repeats = FALSE;
+int simulate_incrementing_repeats = false;
 
 static int phase_b_handler(t30_state_t *s, void *user_data, int result)
 {
@@ -124,7 +124,7 @@ static void phase_e_handler(t30_state_t *s, void *user_data, int result)
     fax_log_rx_parameters(s, tag);
     t30_get_transfer_statistics(s, &t);
     succeeded[i - 'A'] = (result == T30_ERR_OK)  &&  (t.pages_tx == 12  ||  t.pages_rx == 12);
-    //done[i - 'A'] = TRUE;
+    //done[i - 'A'] = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -209,24 +209,24 @@ int main(int argc, char *argv[])
 
     t38_version = 1;
     options = 0;
-    use_tep = FALSE;
+    use_tep = false;
     input_file_name = INPUT_FILE_NAME;
-    use_ecm = FALSE;
-    simulate_incrementing_repeats = FALSE;
+    use_ecm = false;
+    simulate_incrementing_repeats = false;
     g1050_model_no = 0;
     g1050_speed_pattern_no = 1;
-    use_gui = FALSE;
+    use_gui = false;
     supported_modems = T30_SUPPORT_V27TER | T30_SUPPORT_V29 | T30_SUPPORT_V17;
     while ((opt = getopt(argc, argv, "efgi:Im:M:o:s:tv:")) != -1)
     {
         switch (opt)
         {
         case 'e':
-            use_ecm = TRUE;
+            use_ecm = true;
             break;
         case 'g':
 #if defined(ENABLE_GUI)
-            use_gui = TRUE;
+            use_gui = true;
 #else
             fprintf(stderr, "Graphical monitoring not available\n");
             exit(2);
@@ -236,7 +236,7 @@ int main(int argc, char *argv[])
             input_file_name = optarg;
             break;
         case 'I':
-            simulate_incrementing_repeats = TRUE;
+            simulate_incrementing_repeats = true;
             break;
         case 'm':
             supported_modems = atoi(optarg);
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
             g1050_speed_pattern_no = atoi(optarg);
             break;
         case 't':
-            use_tep = TRUE;
+            use_tep = true;
             break;
         case 'v':
             t38_version = atoi(optarg);
@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    if ((t38_state_a = t38_terminal_init(NULL, TRUE, tx_packet_handler_a, t38_state_b)) == NULL)
+    if ((t38_state_a = t38_terminal_init(NULL, true, tx_packet_handler_a, t38_state_b)) == NULL)
     {
         fprintf(stderr, "Cannot start the T.38 channel\n");
         exit(2);
@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
     if (use_ecm)
         t30_set_supported_compressions(t30, T30_SUPPORT_T4_1D_COMPRESSION | T30_SUPPORT_T4_2D_COMPRESSION | T30_SUPPORT_T6_COMPRESSION | T30_SUPPORT_T85_COMPRESSION);
 
-    if ((t38_state_b = t38_terminal_init(NULL, FALSE, tx_packet_handler_b, t38_state_a)) == NULL)
+    if ((t38_state_b = t38_terminal_init(NULL, false, tx_packet_handler_b, t38_state_a)) == NULL)
     {
         fprintf(stderr, "Cannot start the T.38 channel\n");
         exit(2);
@@ -408,7 +408,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
     printf("Tests passed\n");
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

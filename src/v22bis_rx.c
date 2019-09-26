@@ -48,10 +48,18 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
 #include "spandsp/logging.h"
+#include "spandsp/fast_convert.h"
+#include "spandsp/math_fixed.h"
+#include "spandsp/saturated.h"
 #include "spandsp/complex.h"
 #include "spandsp/vector_float.h"
 #include "spandsp/complex_vector_float.h"
@@ -67,6 +75,7 @@
 #include "spandsp/v22bis.h"
 
 #include "spandsp/private/logging.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/v22bis.h"
 
 #if defined(SPANDSP_USE_FIXED_POINTx)
@@ -107,7 +116,7 @@ The basic method used by the V.22bis receiver is:
 
         Tune the local carrier, based on the angular mismatch between the actual signal and
         the decision.
-        
+
         Tune the equalizer, based on the mismatch between the actual signal and the decision.
 
         Descramble and output the bits represented by the decision.
@@ -126,14 +135,6 @@ static const uint8_t space_map_v22bis[6][6] =
 static const uint8_t phase_steps[4] =
 {
     1, 0, 2, 3
-};
-
-static const uint8_t ones[] =
-{
-    0, 1, 1, 2,
-    1, 2, 2, 3,
-    1, 2, 2, 3,
-    2, 3, 3, 4
 };
 
 SPAN_DECLARE(float) v22bis_rx_carrier_frequency(v22bis_state_t *s)
@@ -170,7 +171,11 @@ void v22bis_report_status_change(v22bis_state_t *s, int status)
 }
 /*- End of function --------------------------------------------------------*/
 
+#if defined(SPANDSP_USE_FIXED_POINTx)
+SPAN_DECLARE(int) v22bis_rx_equalizer_state(v22bis_state_t *s, complexi16_t **coeffs)
+#else
 SPAN_DECLARE(int) v22bis_rx_equalizer_state(v22bis_state_t *s, complexf_t **coeffs)
+#endif
 {
     *coeffs = s->rx.eq_coeff;
     return 2*V22BIS_EQUALIZER_LEN + 1;
@@ -263,7 +268,7 @@ static __inline__ void track_carrier(v22bis_state_t *s, const complexf_t *z, con
        positions is proportional to the phase error, for any particular target. However, the
        different amplitudes of the various target positions scale things. */
     error = z->im*target->re - z->re*target->im;
-    
+
     s->rx.carrier_phase_rate += (int32_t) (s->rx.carrier_track_i*error);
     s->rx.carrier_phase += (int32_t) (s->rx.carrier_track_p*error);
     //span_log(&s->logging, SPAN_LOG_FLOW, "Im = %15.5f   f = %15.5f\n", error, dds_frequencyf(s->rx.carrier_phase_rate));
@@ -508,7 +513,7 @@ static void process_half_baud(v22bis_state_t *s, const complexf_t *sample)
             s->rx.gardner_step = 32;
         break;
     case V22BIS_RX_TRAINING_STAGE_UNSCRAMBLED_ONES:
-        /* Calling modem only */
+        /* Calling modem only. */
         /* The calling modem should initially receive unscrambled ones at 1200bps */
         target = &v22bis_constellation[nearest];
         track_carrier(s, &z, target);
@@ -634,7 +639,7 @@ static void process_half_baud(v22bis_state_t *s, const complexf_t *sample)
                 if (s->rx.training_count >= ms_to_symbols(100 + 450))
                 {
                     span_log(&s->logging, SPAN_LOG_FLOW, "+++ starting 16 way decisions (caller)\n");
-                    s->rx.sixteen_way_decisions = TRUE;
+                    s->rx.sixteen_way_decisions = true;
                     s->rx.training = V22BIS_RX_TRAINING_STAGE_WAIT_FOR_SCRAMBLED_ONES_AT_2400;
                     s->rx.pattern_repeats = 0;
                     s->rx.carrier_track_i = 8000.0f;
@@ -645,7 +650,7 @@ static void process_half_baud(v22bis_state_t *s, const complexf_t *sample)
                 if (s->rx.training_count >= ms_to_symbols(450))
                 {
                     span_log(&s->logging, SPAN_LOG_FLOW, "+++ starting 16 way decisions (answerer)\n");
-                    s->rx.sixteen_way_decisions = TRUE;
+                    s->rx.sixteen_way_decisions = true;
                     s->rx.training = V22BIS_RX_TRAINING_STAGE_WAIT_FOR_SCRAMBLED_ONES_AT_2400;
                     s->rx.pattern_repeats = 0;
                 }
@@ -709,7 +714,7 @@ SPAN_DECLARE_NONSTD(int) v22bis_rx(v22bis_state_t *s, const int16_t amp[], int l
     for (i = 0;  i < len;  i++)
     {
         /* Complex bandpass filter the signal, using a pair of FIRs, and RRC coeffs shifted
-           to centre at 1200Hz or 2400Hz. The filters support 12 fractional phase shifts, to 
+           to centre at 1200Hz or 2400Hz. The filters support 12 fractional phase shifts, to
            permit signal extraction very close to the middle of a symbol. */
         s->rx.rrc_filter[s->rx.rrc_filter_step] = amp[i];
         if (++s->rx.rrc_filter_step >= V22BIS_RX_FILTER_STEPS)
@@ -750,7 +755,7 @@ SPAN_DECLARE_NONSTD(int) v22bis_rx(v22bis_state_t *s, const int16_t amp[], int l
             /* Look for power exceeding the carrier on point */
             if (power < s->rx.carrier_on_power)
                 continue;
-            s->rx.signal_present = TRUE;
+            s->rx.signal_present = true;
             v22bis_report_status_change(s, SIG_STATUS_CARRIER_UP);
         }
         if (s->rx.training != V22BIS_RX_TRAINING_STAGE_PARKED)
@@ -844,7 +849,7 @@ int v22bis_rx_restart(v22bis_state_t *s)
     s->rx.scrambler_pattern_count = 0;
     s->rx.training = V22BIS_RX_TRAINING_STAGE_SYMBOL_ACQUISITION;
     s->rx.training_count = 0;
-    s->rx.signal_present = FALSE;
+    s->rx.signal_present = false;
 
     s->rx.carrier_phase_rate = dds_phase_ratef((s->calling_party)  ?  2400.0f  :  1200.0f);
     s->rx.carrier_phase = 0;
@@ -853,7 +858,7 @@ int v22bis_rx_restart(v22bis_state_t *s)
     s->rx.agc_scaling = 0.0005f*0.025f;
 
     s->rx.constellation_state = 0;
-    s->rx.sixteen_way_decisions = FALSE;
+    s->rx.sixteen_way_decisions = false;
 
     equalizer_reset(s);
 

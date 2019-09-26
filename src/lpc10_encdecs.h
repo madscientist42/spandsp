@@ -38,13 +38,13 @@ void lpc10_placea(int32_t *ipitch,
                   int32_t af,
                   int32_t vwin[3][2],
                   int32_t awin[3][2],
-                  int32_t ewin[3][2], 
+                  int32_t ewin[3][2],
                   int32_t lframe,
                   int32_t maxwin);
 
 void lpc10_placev(int32_t *osbuf,
                   int32_t *osptr,
-                  int32_t oslen, 
+                  int32_t oslen,
                   int32_t *obound,
                   int32_t vwin[3][2],
                   int32_t af,
@@ -61,8 +61,8 @@ void lpc10_voicing(lpc10_encode_state_t *st,
                    const int32_t buflim[],
                    int32_t half,
                    float *minamd,
-                   float *maxamd, 
-	               int32_t *mintau,
+                   float *maxamd,
+                   int32_t *mintau,
                    float *ivrc,
                    int32_t *obound);
 
@@ -78,7 +78,7 @@ static __inline__ int32_t pow_ii(int32_t x, int32_t n)
         if (n == 0  ||  x == 1)
             return 1;
         if (x != -1)
-            return (x == 0)  ?  1/x  :  0;
+            return (x != 0)  ?  1/x  :  0;
         n = -n;
     }
     u = n;

@@ -43,9 +43,7 @@
 #include <time.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 #include "spandsp-sim.h"
@@ -90,6 +88,8 @@ static void complexify_tests(void)
         out[2*i] = cc.re;
         out[2*i + 1] = cc.im;
     }
+    awgn_release(&noise1);
+    complexify_free(s);
     outframes = sf_writef_short(outhandle, out, 20000);
     if (outframes != 20000)
     {
@@ -117,13 +117,13 @@ static void test_one_way_model(int line_model_no, int speech_test)
     int i;
     int j;
     awgn_state_t noise1;
-    
+
     if ((model = one_way_line_model_init(line_model_no, -50, channel_codec, rbs_pattern)) == NULL)
     {
         fprintf(stderr, "    Failed to create line model\n");
         exit(2);
     }
-    
+
     awgn_init_dbm0(&noise1, 1234567, -10.0f);
 
     if (speech_test)
@@ -159,7 +159,7 @@ static void test_one_way_model(int line_model_no, int speech_test)
         }
         for (j = 0;  j < samples;  j++)
         {
-            one_way_line_model(model, 
+            one_way_line_model(model,
                                &output1[j],
                                &input1[j],
                                1);
@@ -185,7 +185,7 @@ static void test_one_way_model(int line_model_no, int speech_test)
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME1);
         exit(2);
     }
-    one_way_line_model_release(model);
+    one_way_line_model_free(model);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -206,7 +206,7 @@ static void test_both_ways_model(int line_model_no, int speech_test)
     int j;
     awgn_state_t noise1;
     awgn_state_t noise2;
-    
+
     if ((model = both_ways_line_model_init(line_model_no,
                                            -50,
                                            -15.0f,
@@ -221,7 +221,7 @@ static void test_both_ways_model(int line_model_no, int speech_test)
         fprintf(stderr, "    Failed to create line model\n");
         exit(2);
     }
-    
+
     awgn_init_dbm0(&noise1, 1234567, -10.0f);
     awgn_init_dbm0(&noise2, 1234567, -10.0f);
 
@@ -270,7 +270,7 @@ static void test_both_ways_model(int line_model_no, int speech_test)
         }
         for (j = 0;  j < samples;  j++)
         {
-            both_ways_line_model(model, 
+            both_ways_line_model(model,
                                  &output1[j],
                                  &input1[j],
                                  &output2[j],
@@ -304,7 +304,7 @@ static void test_both_ways_model(int line_model_no, int speech_test)
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME2);
         exit(2);
     }
-    both_ways_line_model_release(model);
+    both_ways_line_model_free(model);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -341,7 +341,7 @@ static void test_line_filter(int line_model_no)
             if (++p == 129)
                 p = 0;
             ptr = p;
-    
+
             /* Apply the filter */
             out = 0.0f;
             for (j = 0;  j < 129;  j++)
@@ -365,13 +365,13 @@ static void test_line_filter(int line_model_no)
 int main(int argc, char *argv[])
 {
     int line_model_no;
-    int speech_test;
     int opt;
+    int speech_test;
 
     channel_codec = MUNGE_CODEC_NONE;
     line_model_no = 0;
     rbs_pattern = 0;
-    speech_test = FALSE;
+    speech_test = false;
     while ((opt = getopt(argc, argv, "c:m:r:s:")) != -1)
     {
         switch (opt)

@@ -80,7 +80,7 @@ struct at_state_s
     int rx_window;
     /*! Value set by +EWIND */
     int tx_window;
-    
+
     int v8bis_signal;
     int v8bis_1st_message;
     int v8bis_2nd_message;
@@ -104,9 +104,9 @@ struct at_state_s
     int command_dial;
     int ok_is_pending;
     int dte_is_waiting;
-    /*! \brief TRUE if a carrier is presnt. Otherwise FALSE. */
+    /*! \brief True if a carrier is present. */
     int rx_signal_present;
-    /*! \brief TRUE if a modem has trained, Otherwise FALSE. */
+    /*! \brief True if a modem has trained. */
     int rx_trained;
     int transmit;
 

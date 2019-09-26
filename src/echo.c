@@ -50,13 +50,13 @@
 /* The FIR taps must be adapted as 32 bit values, to get the necessary finesse
    in the adaption process. However, they are applied as 16 bit values (bits 30-15
    of the 32 bit values) in the FIR. For the working 16 bit values, we need 4 sets.
-   
+
    3 of the 16 bit sets are used on a rotating basis. Normally the canceller steps
    round these 3 sets at regular intervals. Any time we detect double talk, we can go
    back to the set from two steps ago with reasonable assurance it is a well adapted
    set. We cannot just go back one step, as we may have rotated the sets just before
    double talk or tone was detected, and that set may already be somewhat corrupted.
-   
+
    When narrowband energy is detected we need to continue adapting to it, to echo
    cancel it. However, the adaption will almost certainly be going astray. Broadband
    (or even complex sequences of narrowband) energy will normally lead to a well
@@ -88,11 +88,17 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <string.h>
 #include <stdio.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/logging.h"
 #include "spandsp/saturated.h"
@@ -104,12 +110,6 @@
 
 #if !defined(NULL)
 #define NULL (void *) 0
-#endif
-#if !defined(FALSE)
-#define FALSE 0
-#endif
-#if !defined(TRUE)
-#define TRUE (!FALSE)
 #endif
 
 #define NONUPDATE_DWELL_TIME        600     /* 600 samples, or 75ms */
@@ -129,7 +129,7 @@ static int narrowband_detect(echo_can_state_t *ec)
     int score;
     int len = 32;
     int alen = 9;
-    
+
     k = ec->curr_pos;
     for (i = 0;  i < len;  i++)
     {
@@ -244,27 +244,27 @@ SPAN_DECLARE(echo_can_state_t *) echo_can_init(int len, int adaption_mode)
     int i;
     int j;
 
-    if ((ec = (echo_can_state_t *) malloc(sizeof(*ec))) == NULL)
-        return  NULL;
+    if ((ec = (echo_can_state_t *) span_alloc(sizeof(*ec))) == NULL)
+        return NULL;
     memset(ec, 0, sizeof(*ec));
     ec->taps = len;
     ec->curr_pos = ec->taps - 1;
     ec->tap_mask = ec->taps - 1;
-    if ((ec->fir_taps32 = (int32_t *) malloc(ec->taps*sizeof(int32_t))) == NULL)
+    if ((ec->fir_taps32 = (int32_t *) span_alloc(ec->taps*sizeof(int32_t))) == NULL)
     {
-        free(ec);
-        return  NULL;
+        span_free(ec);
+        return NULL;
     }
     memset(ec->fir_taps32, 0, ec->taps*sizeof(int32_t));
     for (i = 0;  i < 4;  i++)
     {
-        if ((ec->fir_taps16[i] = (int16_t *) malloc(ec->taps*sizeof(int16_t))) == NULL)
+        if ((ec->fir_taps16[i] = (int16_t *) span_alloc(ec->taps*sizeof(int16_t))) == NULL)
         {
             for (j = 0;  j < i;  j++)
-                free(ec->fir_taps16[j]);
-            free(ec->fir_taps32);
-            free(ec);
-            return  NULL;
+                span_free(ec->fir_taps16[j]);
+            span_free(ec->fir_taps32);
+            span_free(ec);
+            return NULL;
         }
         memset(ec->fir_taps16[i], 0, ec->taps*sizeof(int16_t));
     }
@@ -274,7 +274,7 @@ SPAN_DECLARE(echo_can_state_t *) echo_can_init(int len, int adaption_mode)
     ec->rx_power_threshold = 10000000;
     ec->geigel_max = 0;
     ec->geigel_lag = 0;
-    ec->dtd_onset = FALSE;
+    ec->dtd_onset = false;
     ec->tap_set = 0;
     ec->tap_rotate_counter = 1600;
     ec->cng_level = 1000;
@@ -292,12 +292,12 @@ SPAN_DECLARE(int) echo_can_release(echo_can_state_t *ec)
 SPAN_DECLARE(int) echo_can_free(echo_can_state_t *ec)
 {
     int i;
-    
+
     fir16_free(&ec->fir_state);
-    free(ec->fir_taps32);
+    span_free(ec->fir_taps32);
     for (i = 0;  i < 4;  i++)
-        free(ec->fir_taps16[i]);
-    free(ec);
+        span_free(ec->fir_taps16[i]);
+    span_free(ec);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -337,7 +337,7 @@ SPAN_DECLARE(void) echo_can_flush(echo_can_state_t *ec)
 
     ec->geigel_max = 0;
     ec->geigel_lag = 0;
-    ec->dtd_onset = FALSE;
+    ec->dtd_onset = false;
     ec->tap_set = 0;
     ec->tap_rotate_counter = 1600;
 
@@ -361,7 +361,7 @@ static __inline__ int16_t echo_can_hpf(int32_t coeff[2], int16_t amp)
 {
     int32_t z;
 
-    /* 
+    /*
        Filter DC, 3dB point is 160Hz (I think), note 32 bit precision required
        otherwise values do not track down to 0. Zero at DC, Pole at (1-Beta)
        only real axis.  Some chip sets (like Si labs) don't need
@@ -371,7 +371,7 @@ static __inline__ int16_t echo_can_hpf(int32_t coeff[2], int16_t amp)
        Note: removes some low frequency from the signal, this reduces
        the speech quality when listening to samples through headphones
        but may not be obvious through a telephone handset.
-                                                                    
+
        Note that the 3dB frequency in radians is approx Beta, e.g. for
        Beta = 2^(-3) = 0.125, 3dB freq is 0.125 rads = 159Hz.
 
@@ -392,7 +392,7 @@ static __inline__ int16_t echo_can_hpf(int32_t coeff[2], int16_t amp)
     coeff[1] = z;
     z = coeff[0] >> 15;
 
-    return saturate(z);
+    return saturate16(z);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -485,7 +485,7 @@ printf("Revert to %d at %d\n", (ec->tap_set + 1)%3, sample_no);
                         ec->narrowband_score = 0;
                     }
                 }
-                ec->dtd_onset = FALSE;
+                ec->dtd_onset = false;
                 if (--ec->tap_rotate_counter <= 0)
                 {
 printf("Rotate to %d at %d\n", ec->tap_set, sample_no);
@@ -498,7 +498,7 @@ printf("Rotate to %d at %d\n", ec->tap_set, sample_no);
                 /* ... and we are not in the dwell time from previous speech. */
                 if ((ec->adaption_mode & ECHO_CAN_USE_ADAPTION)  &&   ec->narrowband_score == 0)
                 {
-                    //nsuppr = saturate((clean_rx << 16)/ec->tx_power[1]);
+                    //nsuppr = saturate16((clean_rx << 16)/ec->tx_power[1]);
                     //nsuppr = clean_rx/ec->tx_power[1];
                     /* If a sudden surge in signal level (e.g. the onset of a tone
                        burst) cause an abnormally high instantaneous to average
@@ -532,7 +532,7 @@ printf("Revert to %d at %d\n", (ec->tap_set + 1)%3, sample_no);
                 for (i = 0;  i < ec->taps;  i++)
                     ec->fir_taps32[i] = ec->fir_taps16[(ec->tap_set + 1)%3][i] << 15;
                 ec->tap_rotate_counter = 1600;
-                ec->dtd_onset = TRUE;
+                ec->dtd_onset = true;
             }
             ec->nonupdate_dwell = NONUPDATE_DWELL_TIME;
         }
@@ -575,7 +575,7 @@ printf("Revert to %d at %d\n", (ec->tap_set + 1)%3, sample_no);
             if (!ec->cng)
             {
                 ec->cng_level = ec->clean_rx_power;
-                ec->cng = TRUE;
+                ec->cng = true;
             }
             if ((ec->adaption_mode & ECHO_CAN_USE_CNG))
             {
@@ -594,12 +594,12 @@ printf("Revert to %d at %d\n", (ec->tap_set + 1)%3, sample_no);
         }
         else
         {
-            ec->cng = FALSE;
+            ec->cng = false;
         }
     }
     else
     {
-        ec->cng = FALSE;
+        ec->cng = false;
     }
 
 printf("Narrowband score %4d %5d at %d\n", ec->narrowband_score, score, sample_no);

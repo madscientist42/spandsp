@@ -38,12 +38,18 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <memory.h>
 #include <string.h>
 #include <limits.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/dc_restore.h"
 #include "spandsp/saturated.h"
@@ -54,6 +60,7 @@
 #include "spandsp/super_tone_rx.h"
 #include "spandsp/sig_tone.h"
 
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/sig_tone.h"
 
 /*! PI */
@@ -118,11 +125,11 @@ static const sig_tone_flat_coeffs_t flat_coeffs[1] =
 {
     {
 #if defined(SPANDSP_USE_FIXED_POINT)
-        { 12900,       -16384,         -16384}, 
+        { 12900,       -16384,         -16384},
         {     0,        -8578,         -11796},
         15,
 #else
-        {0.393676f,    -0.5f,          -0.5f}, 
+        {0.393676f,    -0.5f,          -0.5f},
         {0.0f,         -0.261778f,     -0.359985f},
 #endif
     }
@@ -137,7 +144,7 @@ static const sig_tone_descriptor_t sig_tones[3] =
         ms_to_samples(400),         /* High to low timout - 300ms to 550ms */
         ms_to_samples(225),         /* Sharp to flat timeout */
         ms_to_samples(225),         /* Notch insertion timeout */
-    
+
         ms_to_samples(3),           /* Tone on persistence check */
         ms_to_samples(8),           /* Tone off persistence check */
 
@@ -148,9 +155,15 @@ static const sig_tone_descriptor_t sig_tones[3] =
         },
         &flat_coeffs[NOTCH_COEFF_SET_2280HZ],
 
+#if defined(SPANDSP_USE_FIXED_POINT)
+        13,
+        -30,
+        -30
+#else
         13.0f,
         -30.0f,
         -30.0f
+#endif
     },
     {
         /* 2600Hz (e.g. many US protocols) */
@@ -159,7 +172,7 @@ static const sig_tone_descriptor_t sig_tones[3] =
         ms_to_samples(0),
         ms_to_samples(0),
         ms_to_samples(225),
-    
+
         ms_to_samples(3),
         ms_to_samples(8),
 
@@ -169,10 +182,16 @@ static const sig_tone_descriptor_t sig_tones[3] =
             NULL,
         },
         NULL,
-    
+
+#if defined(SPANDSP_USE_FIXED_POINT)
+        16,
+        -30,
+        -30
+#else
         15.6f,
         -30.0f,
         -30.0f
+#endif
     },
     {
         /* 2400Hz/2600Hz (e.g. SS5 and SS5bis) */
@@ -191,10 +210,16 @@ static const sig_tone_descriptor_t sig_tones[3] =
             &notch_coeffs[NOTCH_COEFF_SET_2600HZ]
         },
         NULL,
-    
+
+#if defined(SPANDSP_USE_FIXED_POINT)
+        16,
+        -30,
+        -30
+#else
         15.6f,
         -30.0f,
         -30.0f
+#endif
     }
 };
 
@@ -236,19 +261,19 @@ SPAN_DECLARE(int) sig_tone_tx(sig_tone_tx_state_t *s, int16_t amp[], int len)
             if (s->current_tx_timeout <= len - i)
             {
                 n = s->current_tx_timeout;
-                need_update = TRUE;
+                need_update = true;
             }
             else
             {
                 n = len - i;
-                need_update = FALSE;
+                need_update = false;
             }
             s->current_tx_timeout -= n;
         }
         else
         {
             n = len - i;
-            need_update = FALSE;
+            need_update = false;
         }
         if (!(s->current_tx_tone & SIG_TONE_TX_PASSTHROUGH))
             vec_zeroi16(&amp[i], n);
@@ -300,7 +325,7 @@ SPAN_DECLARE(void) sig_tone_tx_set_mode(sig_tone_tx_state_t *s, int mode, int du
 {
     int old_tones;
     int new_tones;
-    
+
     old_tones = s->current_tx_tone & (SIG_TONE_1_PRESENT | SIG_TONE_2_PRESENT);
     new_tones = mode & (SIG_TONE_1_PRESENT | SIG_TONE_2_PRESENT);
     if (new_tones  &&  old_tones != new_tones)
@@ -326,7 +351,7 @@ SPAN_DECLARE(sig_tone_tx_state_t *) sig_tone_tx_init(sig_tone_tx_state_t *s, int
 
     if (s == NULL)
     {
-        if ((s = (sig_tone_tx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (sig_tone_tx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -358,7 +383,7 @@ SPAN_DECLARE(int) sig_tone_tx_release(sig_tone_tx_state_t *s)
 SPAN_DECLARE(int) sig_tone_tx_free(sig_tone_tx_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -449,13 +474,13 @@ SPAN_DECLARE(int) sig_tone_rx(sig_tone_rx_state_t *s, int16_t amp[], int len)
         if ((s->signalling_state & (SIG_TONE_1_PRESENT | SIG_TONE_2_PRESENT)))
         {
             if (s->flat_mode_timeout  &&  --s->flat_mode_timeout == 0)
-                s->flat_mode = TRUE;
+                s->flat_mode = true;
             /*endif*/
         }
         else
         {
             s->flat_mode_timeout = s->desc->sharp_flat_timeout;
-            s->flat_mode = FALSE;
+            s->flat_mode = false;
         }
         /*endif*/
 
@@ -491,7 +516,7 @@ SPAN_DECLARE(int) sig_tone_rx(sig_tone_rx_state_t *s, int16_t amp[], int len)
 #endif
             }
             flat_power = power_meter_update(&s->flat_power, bandpass_signal);
-    
+
             /* For the flat receiver we use a simple power threshold! */
             if ((s->signalling_state & (SIG_TONE_1_PRESENT | SIG_TONE_2_PRESENT)))
             {
@@ -635,14 +660,14 @@ SPAN_DECLARE(sig_tone_rx_state_t *) sig_tone_rx_init(sig_tone_rx_state_t *s, int
 #if !defined(SPANDSP_USE_FIXED_POINT)
     int j;
 #endif
-    
+
     if (sig_update == NULL  ||  tone_type < 1  ||  tone_type > 3)
         return NULL;
     /*endif*/
 
     if (s == NULL)
     {
-        if ((s = (sig_tone_rx_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (sig_tone_rx_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -686,7 +711,7 @@ SPAN_DECLARE(int) sig_tone_rx_release(sig_tone_rx_state_t *s)
 SPAN_DECLARE(int) sig_tone_rx_free(sig_tone_rx_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

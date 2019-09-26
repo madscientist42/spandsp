@@ -2,12 +2,11 @@
  * SpanDSP - a series of DSP components for telephony
  *
  * v17_v32bis_tx_constellation_maps.h - ITU V.17 and V.32bis modems
- *                                      transmit part.
- *                                      Constellation mapping.
+ *                                      transmit part. Constellation mapping.
  *
  * Written by Steve Underwood <steveu@coppice.org>
  *
- * Copyright (C) 2004 Steve Underwood
+ * Copyright (C) 2004, 2012 Steve Underwood
  *
  * All rights reserved.
  *

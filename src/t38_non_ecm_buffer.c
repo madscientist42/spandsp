@@ -42,10 +42,16 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <assert.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 #include "spandsp/queue.h"
 #include "spandsp/dc_restore.h"
@@ -75,7 +81,7 @@ static void restart_buffer(t38_non_ecm_buffer_state_t *s)
     s->out_ptr = 0;
     s->in_ptr = 0;
     s->latest_eol_ptr = 0;
-    s->data_finished = FALSE;
+    s->data_finished = false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -123,7 +129,7 @@ SPAN_DECLARE(void) t38_non_ecm_buffer_push(t38_non_ecm_buffer_state_t *s)
     /* Don't flow control the data any more. Just push out the remainder of the data
        in the buffer as fast as we can, and shut down. */
     s->latest_eol_ptr = s->in_ptr;
-    s->data_finished = TRUE;
+    s->data_finished = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -153,12 +159,12 @@ SPAN_DECLARE(void) t38_non_ecm_buffer_inject(t38_non_ecm_buffer_state_t *s, cons
        An EOL 11 zeros followed by a one in a T.4 1D image or 11 zeros followed by a one followed
        by a one or a zero in a T.4 2D image. An RTC consists of 6 EOLs in succession, with no
        pixel data between them.
-    
+
        We can stuff with ones until we get the first EOL into our buffer, then we can stuff with
        zeros in front of each EOL at any point up the the RTC. We should not pad between the EOLs
        which make up the RTC. Most FAX machines don't care about this, but a few will not recognise
        the RTC if here is padding between the EOLs.
-    
+
        We need to buffer whole rows before we output their beginning, so there is no possibility
        of underflow mid-row. */
 
@@ -351,7 +357,7 @@ SPAN_DECLARE(t38_non_ecm_buffer_state_t *) t38_non_ecm_buffer_init(t38_non_ecm_b
 {
     if (s == NULL)
     {
-        if ((s = (t38_non_ecm_buffer_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (t38_non_ecm_buffer_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -371,7 +377,7 @@ SPAN_DECLARE(int) t38_non_ecm_buffer_release(t38_non_ecm_buffer_state_t *s)
 SPAN_DECLARE(int) t38_non_ecm_buffer_free(t38_non_ecm_buffer_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

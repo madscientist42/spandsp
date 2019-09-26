@@ -83,14 +83,14 @@ struct faxtester_state_s
     int image_len;
     int image_ptr;
     int image_bit_ptr;
-    
+
     int ecm_frame_size;
     int corrupt_crc;
-    
+
     int final_delayed;
 
     fax_modems_state_t modems;
-    
+
     /*! If TRUE, transmission is in progress */
     int transmit;
 
@@ -103,7 +103,7 @@ struct faxtester_state_s
     int current_tx_type;
 
     int wait_for_silence;
-    
+
     int tone_state;
     int64_t tone_on_time;
 
@@ -182,11 +182,9 @@ void faxtester_set_ecm_image_buffer(faxtester_state_t *s, const uint8_t *buf, in
 /*! Initialise a FAX context.
     \brief Initialise a FAX context.
     \param s The FAX tester context.
-    \param calling_party TRUE if the context is for a calling party. FALSE if the
-           context is for an answering party.
     \return A pointer to the FAX context, or NULL if there was a problem.
 */
-faxtester_state_t *faxtester_init(faxtester_state_t *s, int calling_party);
+faxtester_state_t *faxtester_init(faxtester_state_t *s);
 
 /*! Release a FAX context.
     \brief Release a FAX context.

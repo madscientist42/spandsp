@@ -50,10 +50,6 @@ compression may be tested.
 #include <time.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -98,7 +94,7 @@ int main(int argc, char *argv[])
     bit_rate = 32000;
     encoded_file_name = NULL;
     in_file_name = IN_FILE_NAME;
-    log_encoded_data = FALSE;
+    log_encoded_data = false;
     while ((opt = getopt(argc, argv, "2d:i:l")) != -1)
     {
         switch (opt)
@@ -113,7 +109,7 @@ int main(int argc, char *argv[])
             in_file_name = optarg;
             break;
         case 'l':
-            log_encoded_data = TRUE;
+            log_encoded_data = true;
             break;
         default:
             //usage();
@@ -279,16 +275,15 @@ int main(int argc, char *argv[])
             }
         }
 
-
-        oki_adpcm_release(oki_enc_state);
+        oki_adpcm_free(oki_enc_state);
         if (sf_close_telephony(inhandle))
         {
             fprintf(stderr, "    Cannot close audio file '%s'\n", in_file_name);
             exit(2);
         }
     }
-    oki_adpcm_release(oki_dec_state);
-    oki_adpcm_release(oki_dec_state2);
+    oki_adpcm_free(oki_dec_state);
+    oki_adpcm_free(oki_dec_state2);
     if (sf_close_telephony(outhandle))
     {
         fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);

@@ -56,9 +56,6 @@ These tests...
 #define MITEL_DIR                   "../test-data/mitel/"
 #define BELLCORE_DIR                "../test-data/bellcore/"
 
-#define FALSE 0
-#define TRUE (!FALSE)
-
 #define LEVEL_MAX                   -5
 #define LEVEL_MIN                   -48
 #define LEVEL_MIN_ACCEPT            -43
@@ -123,7 +120,7 @@ static int preamble_get_bit(void *user_data)
 {
     static int bit_no = 0;
     int bit;
-    
+
     /* Generate a section of HDLC flag octet preamble. Then generate some random
        bits, which should not look like preamble. */
     if (++preamble_count < 255)
@@ -316,7 +313,7 @@ int main(int argc, char *argv[])
         /*endfor*/
     }
     /*endif*/
-    
+
     if ((test_list & PERFORM_TEST_1B))
     {
         printf("Test 1b: CED/ANS generation to a file\n");
@@ -375,7 +372,7 @@ int main(int argc, char *argv[])
         /*endfor*/
     }
     /*endif*/
-    
+
     if ((test_list & PERFORM_TEST_1E))
     {
         printf("Test 1e: ANSam/ (Modulated EC-disable) generation to a file\n");
@@ -402,14 +399,14 @@ int main(int argc, char *argv[])
         exit(2);
     }
     /*endif*/
-    
+
     if ((test_list & PERFORM_TEST_2A))
     {
         printf("Test 2a: CNG detection with frequency\n");
         tone_type = MODEM_CONNECT_TONES_FAX_CNG;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 600;  pitch <= 1600;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -444,13 +441,13 @@ int main(int argc, char *argv[])
             if (pitch < (1100 - CED_FREQ_BLACKOUT)  ||  pitch > (1100 + CED_FREQ_BLACKOUT))
             {
                 if (hit != MODEM_CONNECT_TONES_NONE)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (1100 - CED_FREQ_TOLERANCE)  &&  pitch < (1100 + CED_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -473,8 +470,8 @@ int main(int argc, char *argv[])
     {
         printf("Test 2b: CED/ANS detection with frequency\n");
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 1600;  pitch < 2600;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -495,13 +492,13 @@ int main(int argc, char *argv[])
             if (pitch < (2100 - CNG_FREQ_BLACKOUT)  ||  pitch > (2100 + CNG_FREQ_BLACKOUT))
             {
                 if (hit != MODEM_CONNECT_TONES_NONE)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (2100 - CNG_FREQ_TOLERANCE)  &&  pitch < (2100 + CNG_FREQ_TOLERANCE))
             {
                 if (hit != MODEM_CONNECT_TONES_FAX_CED)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -524,8 +521,8 @@ int main(int argc, char *argv[])
         printf("Test 2c: ANSam detection with frequency\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2000;  pitch <= 2200;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -546,13 +543,13 @@ int main(int argc, char *argv[])
             if (pitch < (2100 - CNG_FREQ_BLACKOUT)  ||  pitch > (2100 + CNG_FREQ_BLACKOUT))
             {
                 if (hit != MODEM_CONNECT_TONES_NONE)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (2100 - CNG_FREQ_TOLERANCE)  &&  pitch < (2100 + CNG_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -576,8 +573,8 @@ int main(int argc, char *argv[])
         printf("Test 2d: ANS/ (EC-disable) detection with frequency\n");
         tone_type = MODEM_CONNECT_TONES_ANS_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2000;  pitch <= 2200;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -598,13 +595,13 @@ int main(int argc, char *argv[])
             if (pitch < (2100 - CNG_FREQ_BLACKOUT)  ||  pitch > (2100 + CNG_FREQ_BLACKOUT))
             {
                 if (hit != MODEM_CONNECT_TONES_NONE)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (2100 - CNG_FREQ_TOLERANCE)  &&  pitch < (2100 + CNG_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -628,8 +625,8 @@ int main(int argc, char *argv[])
         printf("Test 2e: ANSam/ (Modulated EC-disable) detection with frequency\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2000;  pitch <= 2200;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -650,13 +647,13 @@ int main(int argc, char *argv[])
             if (pitch < (2100 - CNG_FREQ_BLACKOUT)  ||  pitch > (2100 + CNG_FREQ_BLACKOUT))
             {
                 if (hit != MODEM_CONNECT_TONES_NONE)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (2100 - CNG_FREQ_TOLERANCE)  &&  pitch < (2100 + CNG_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -680,8 +677,8 @@ int main(int argc, char *argv[])
         printf("Test 3a: CNG detection with level\n");
         tone_type = MODEM_CONNECT_TONES_FAX_CNG;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 1100 - CED_FREQ_TOLERANCE;  pitch <= 1100 + CED_FREQ_TOLERANCE;  pitch += 2*CED_FREQ_TOLERANCE)
         {
             for (level = LEVEL_MAX;  level >= LEVEL_MIN;  level--)
@@ -705,13 +702,13 @@ int main(int argc, char *argv[])
                 if (level < LEVEL_MIN_REJECT)
                 {
                     if (hit != MODEM_CONNECT_TONES_NONE)
-                        false_hit = TRUE;
+                        false_hit = true;
                     /*endif*/
                 }
                 else if (level > LEVEL_MIN_ACCEPT)
                 {
                     if (hit != tone_type)
-                        false_miss = TRUE;
+                        false_miss = true;
                     /*endif*/
                 }
                 /*endif*/
@@ -737,8 +734,8 @@ int main(int argc, char *argv[])
         printf("Test 3b: CED/ANS detection with level\n");
         tone_type = MODEM_CONNECT_TONES_ANS;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2100 - CNG_FREQ_TOLERANCE;  pitch <= 2100 + CNG_FREQ_TOLERANCE;  pitch += 2*CNG_FREQ_TOLERANCE)
         {
             for (level = LEVEL_MAX;  level >= LEVEL_MIN;  level--)
@@ -762,13 +759,13 @@ int main(int argc, char *argv[])
                 if (level < LEVEL_MIN_REJECT)
                 {
                     if (hit != MODEM_CONNECT_TONES_NONE)
-                        false_hit = TRUE;
+                        false_hit = true;
                     /*endif*/
                 }
                 else if (level > LEVEL_MIN_ACCEPT)
                 {
                     if (hit != tone_type)
-                        false_miss = TRUE;
+                        false_miss = true;
                     /*endif*/
                 }
                 /*endif*/
@@ -794,8 +791,8 @@ int main(int argc, char *argv[])
         printf("Test 3c: ANSam detection with level\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2100 - CNG_FREQ_TOLERANCE;  pitch <= 2100 + CNG_FREQ_TOLERANCE;  pitch += 2*CNG_FREQ_TOLERANCE)
         {
             //for (level = LEVEL_MAX;  level >= LEVEL_MIN;  level--)
@@ -821,13 +818,13 @@ int main(int argc, char *argv[])
                 if (level < LEVEL_MIN_REJECT)
                 {
                     if (hit != MODEM_CONNECT_TONES_NONE)
-                        false_hit = TRUE;
+                        false_hit = true;
                     /*endif*/
                 }
                 else if (level > LEVEL_MIN_ACCEPT)
                 {
                     if (hit != tone_type)
-                        false_miss = TRUE;
+                        false_miss = true;
                     /*endif*/
                 }
                 /*endif*/
@@ -853,8 +850,8 @@ int main(int argc, char *argv[])
         printf("Test 3d: ANS/ (EC-disable) detection with level\n");
         tone_type = MODEM_CONNECT_TONES_ANS_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2100 - CNG_FREQ_TOLERANCE;  pitch <= 2100 + CNG_FREQ_TOLERANCE;  pitch += 2*CNG_FREQ_TOLERANCE)
         {
             for (level = LEVEL_MAX;  level >= LEVEL_MIN;  level--)
@@ -878,13 +875,13 @@ int main(int argc, char *argv[])
                 if (level < LEVEL_MIN_REJECT)
                 {
                     if (hit != MODEM_CONNECT_TONES_NONE)
-                        false_hit = TRUE;
+                        false_hit = true;
                     /*endif*/
                 }
                 else if (level > LEVEL_MIN_ACCEPT)
                 {
                     if (hit != tone_type)
-                        false_miss = TRUE;
+                        false_miss = true;
                     /*endif*/
                 }
                 /*endif*/
@@ -910,8 +907,8 @@ int main(int argc, char *argv[])
         printf("Test 3e: ANSam/ (Modulated EC-disable) detection with level\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 2100 - CNG_FREQ_TOLERANCE;  pitch <= 2100 + CNG_FREQ_TOLERANCE;  pitch += 2*CNG_FREQ_TOLERANCE)
         {
             for (level = LEVEL_MAX;  level >= LEVEL_MIN;  level--)
@@ -936,13 +933,13 @@ int main(int argc, char *argv[])
                 if (level < LEVEL_MIN_REJECT)
                 {
                     if (hit != MODEM_CONNECT_TONES_NONE)
-                        false_hit = TRUE;
+                        false_hit = true;
                     /*endif*/
                 }
                 else if (level > LEVEL_MIN_ACCEPT)
                 {
                     if (hit != tone_type)
-                        false_miss = TRUE;
+                        false_miss = true;
                     /*endif*/
                 }
                 /*endif*/
@@ -966,8 +963,8 @@ int main(int argc, char *argv[])
     if ((test_list & PERFORM_TEST_4))
     {
         printf("Test 4: CED detection, when stimulated with V.21 preamble\n");
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
 
         /* Send 255 bits of preamble (0.85s, the minimum specified preamble for T.30), and then
            some random bits. Check the preamble detector comes on, and goes off at reasonable times. */
@@ -1002,8 +999,8 @@ int main(int argc, char *argv[])
         printf("Test 5A: ANS and ANS/ detection with reversal interval\n");
         tone_type = MODEM_CONNECT_TONES_ANS_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (interval = 400;  interval < 800;  interval++)
         {
             printf("Reversal interval = %d\n", interval);
@@ -1034,13 +1031,13 @@ int main(int argc, char *argv[])
             if (interval < (450 - 25)  ||  interval > (450 + 25))
             {
                 if (hits != 0)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (interval > (450 - 25)  &&  interval < (450 + 25))
             {
                 if (hits == 0)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -1064,8 +1061,8 @@ int main(int argc, char *argv[])
         printf("Test 5B: ANS and ANS/ detection with mixed reversal intervals\n");
         awgn_init_dbm0(&chan_noise_source, 7162534, -60.0f);
         tone_type = MODEM_CONNECT_TONES_ANS_PR;
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         interval = 450;
         printf("Reversal interval = %d\n", interval);
         /* Use the transmitter to test the receiver */
@@ -1113,8 +1110,8 @@ int main(int argc, char *argv[])
         printf("Test 6a: ANSam detection with AM pitch\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 5;  pitch < 25;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -1135,13 +1132,13 @@ int main(int argc, char *argv[])
             if (pitch < (15 - 10)  ||  pitch > (15 + 10))
             {
                 if (hit == tone_type)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (15 - AM_FREQ_TOLERANCE)  &&  pitch < (15 + AM_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -1165,8 +1162,8 @@ int main(int argc, char *argv[])
         printf("Test 6b: ANSam/ (Modulated EC-disable) detection with AM pitch\n");
         tone_type = MODEM_CONNECT_TONES_ANSAM_PR;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (pitch = 5;  pitch < 25;  pitch++)
         {
             /* Use the transmitter to test the receiver */
@@ -1187,13 +1184,13 @@ int main(int argc, char *argv[])
             if (pitch < (15 - 10)  ||  pitch > (15 + 10))
             {
                 if (hit == tone_type)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (pitch > (15 - AM_FREQ_TOLERANCE)  &&  pitch < (15 + AM_FREQ_TOLERANCE))
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -1218,8 +1215,8 @@ int main(int argc, char *argv[])
         tone_type = MODEM_CONNECT_TONES_ANSAM;
         pitch = 2100;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (depth = 0;  depth < 40;  depth++)
         {
             /* Use the transmitter to test the receiver */
@@ -1240,13 +1237,13 @@ int main(int argc, char *argv[])
             if (depth < 10)
             {
                 if (hit == tone_type)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (depth > 15)
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -1271,8 +1268,8 @@ int main(int argc, char *argv[])
         tone_type = MODEM_CONNECT_TONES_ANSAM_PR;
         pitch = 2100;
         awgn_init_dbm0(&chan_noise_source, 7162534, -50.0f);
-        false_hit = FALSE;
-        false_miss = FALSE;
+        false_hit = false;
+        false_miss = false;
         for (depth = 0;  depth < 40;  depth++)
         {
             /* Use the transmitter to test the receiver */
@@ -1293,13 +1290,13 @@ int main(int argc, char *argv[])
             if (depth < 10)
             {
                 if (hit == tone_type)
-                    false_hit = TRUE;
+                    false_hit = true;
                 /*endif*/
             }
             else if (depth > 15)
             {
                 if (hit != tone_type)
-                    false_miss = TRUE;
+                    false_miss = true;
                 /*endif*/
             }
             /*endif*/
@@ -1426,7 +1423,7 @@ int main(int argc, char *argv[])
         printf("    File gave %d hits.\n", hits);
     }
     printf("Tests passed.\n");
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

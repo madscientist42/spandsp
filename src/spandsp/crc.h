@@ -60,7 +60,7 @@ SPAN_DECLARE(int) crc_itu32_append(uint8_t *buf, int len);
 /*! \brief Check the ITU/CCITT CRC-32 value in a frame.
     \param buf The buffer containing the frame.
     \param len The length of the frame.
-    \return TRUE if the CRC is OK, else FALSE.
+    \return True if the CRC is OK, else false.
 */
 SPAN_DECLARE(int) crc_itu32_check(const uint8_t *buf, int len);
 
@@ -93,7 +93,7 @@ SPAN_DECLARE(int) crc_itu16_append(uint8_t *buf, int len);
 /*! \brief Check the ITU/CCITT CRC-16 value in a frame.
     \param buf The buffer containing the frame.
     \param len The length of the frame.
-    \return TRUE if the CRC is OK, else FALSE.
+    \return True if the CRC is OK, else false.
 */
 SPAN_DECLARE(int) crc_itu16_check(const uint8_t *buf, int len);
 

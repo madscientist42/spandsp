@@ -40,10 +40,6 @@
 #include <string.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
@@ -177,7 +173,7 @@ static void compliance_tests(int log_audio)
         printf("Tests failed\n");
         exit(2);
     }
-    
+
     printf("Cyclic conversion repeatability tests.\n");
     /* Find what happens to every possible linear value after a round trip. */
     for (i = 0;  i < 65536;  i++)
@@ -204,7 +200,7 @@ static void compliance_tests(int log_audio)
             exit(2);
         }
     }
-    
+
     printf("Reference power level tests.\n");
     power_meter_init(&power_meter, 7);
 
@@ -278,7 +274,7 @@ static void compliance_tests(int log_audio)
             }
         }
     }
-    
+
     enc_state = g711_init(NULL, G711_ALAW);
     transcode = g711_init(NULL, G711_ALAW);
     dec_state = g711_init(NULL, G711_ULAW);
@@ -318,9 +314,9 @@ static void compliance_tests(int log_audio)
             }
         }
     }
-    g711_release(enc_state);
-    g711_release(transcode);
-    g711_release(dec_state);
+    g711_free(enc_state);
+    g711_free(transcode);
+    g711_free(dec_state);
 
     if (log_audio)
     {
@@ -357,10 +353,10 @@ int main(int argc, char *argv[])
     int16_t outdata[BLOCK_LEN];
     uint8_t g711data[BLOCK_LEN];
 
-    basic_tests = TRUE;
+    basic_tests = true;
     law = G711_ALAW;
-    encode = FALSE;
-    decode = FALSE;
+    encode = false;
+    decode = false;
     in_file = NULL;
     out_file = NULL;
     while ((opt = getopt(argc, argv, "ad:e:l:u")) != -1)
@@ -369,24 +365,24 @@ int main(int argc, char *argv[])
         {
         case 'a':
             law = G711_ALAW;
-            basic_tests = FALSE;
+            basic_tests = false;
             break;
         case 'd':
             in_file = optarg;
-            basic_tests = FALSE;
-            decode = TRUE;
+            basic_tests = false;
+            decode = true;
             break;
         case 'e':
             in_file = optarg;
-            basic_tests = FALSE;
-            encode = TRUE;
+            basic_tests = false;
+            encode = true;
             break;
         case 'l':
             out_file = optarg;
             break;
         case 'u':
             law = G711_ULAW;
-            basic_tests = FALSE;
+            basic_tests = false;
             break;
         default:
             //usage();
@@ -396,14 +392,14 @@ int main(int argc, char *argv[])
 
     if (basic_tests)
     {
-        compliance_tests(TRUE);
+        compliance_tests(true);
     }
     else
     {
         if (!decode  &&  !encode)
         {
             decode =
-            encode = TRUE;
+            encode = true;
         }
         if (in_file == NULL)
         {

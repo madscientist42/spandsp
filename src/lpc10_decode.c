@@ -34,18 +34,23 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <inttypes.h>
+#include <memory.h>
 #if defined(HAVE_TGMATH_H)
 #include <tgmath.h>
 #endif
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
-#include <memory.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
-#include "spandsp/dc_restore.h"
 #include "spandsp/lpc10.h"
 #include "spandsp/private/lpc10.h"
 
@@ -114,8 +119,9 @@ static void bsynz(lpc10_decode_state_t *s,
 {
     static const int32_t kexc[25] =
     {
-          8,  -16,   26, -48,  86, -162, 294, -502, 718, -728, 184, 
-        672, -610, -672, 184, 728,  718, 502,  294, 162,   86,  48, 26, 16, 8
+          8,  -16,   26, -48,  86, -162, 294, -502, 718, -728, 184,
+        672, -610, -672, 184, 728,  718, 502,  294, 162,   86,  48,
+         26,   16,    8
     };
     int32_t i;
     int32_t j;
@@ -218,11 +224,11 @@ static void bsynz(lpc10_decode_state_t *s,
 
 /* Synthesize a single pitch epoch */
 static int pitsyn(lpc10_decode_state_t *s,
-                  int voice[], 
+                  int voice[],
                   int32_t *pitch,
                   float *rms,
                   float *rc,
-                  int32_t ivuv[], 
+                  int32_t ivuv[],
                   int32_t ipiti[],
                   float *rmsi,
                   float *rci,
@@ -279,7 +285,7 @@ static int pitsyn(lpc10_decode_state_t *s,
             ipiti[i] = *pitch;
             rmsi[i] = *rms;
         }
-        s->first_pitsyn = FALSE;
+        s->first_pitsyn = false;
     }
     else
     {
@@ -857,7 +863,7 @@ static void decode(lpc10_decode_state_t *s,
         /* Skip decoding on first frame because present data not yet available */
         if (s->first)
         {
-            s->first = FALSE;
+            s->first = false;
             /* Assign PITCH a "default" value on the first call, since */
             /* otherwise it would be left uninitialized.  The two lines */
             /* below were copied from above, since it seemed like a */
@@ -918,7 +924,7 @@ static void decode(lpc10_decode_state_t *s,
             /* If bit 2 of ICORF is set then smooth RMS and RC's, */
             if ((icorf & bit[1]) != 0)
             {
-                if ((float) abs(s->drms[1] - s->drms[0]) >= corth[ixcor + 3] 
+                if ((float) abs(s->drms[1] - s->drms[0]) >= corth[ixcor + 3]
                     &&
                     (float) abs(s->drms[1] - s->drms[2]) >= corth[ixcor + 3])
                 {
@@ -937,7 +943,7 @@ static void decode(lpc10_decode_state_t *s,
             /* If bit 3 of ICORF is set then smooth pitch */
             if ((icorf & bit[2]) != 0)
             {
-                if ((float) abs(s->dpit[1] - s->dpit[0]) >= corth[ixcor - 1] 
+                if ((float) abs(s->dpit[1] - s->dpit[0]) >= corth[ixcor - 1]
                     &&
                     (float) abs(s->dpit[1] - s->dpit[2]) >= corth[ixcor - 1])
                 {
@@ -1016,7 +1022,7 @@ SPAN_DECLARE(lpc10_decode_state_t *) lpc10_decode_init(lpc10_decode_state_t *s, 
 
     if (s == NULL)
     {
-        if ((s = (lpc10_decode_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (lpc10_decode_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
 
@@ -1024,7 +1030,7 @@ SPAN_DECLARE(lpc10_decode_state_t *) lpc10_decode_init(lpc10_decode_state_t *s, 
 
     /* State used by function decode */
     s->iptold = 60;
-    s->first = TRUE;
+    s->first = true;
     s->ivp2h = 0;
     s->iovoic = 0;
     s->iavgp = 60;
@@ -1044,7 +1050,7 @@ SPAN_DECLARE(lpc10_decode_state_t *) lpc10_decode_init(lpc10_decode_state_t *s, 
 
     /* State used by function pitsyn */
     s->rmso = 1.0f;
-    s->first_pitsyn = TRUE;
+    s->first_pitsyn = true;
 
     /* State used by function bsynz */
     s->ipo = 0;
@@ -1071,7 +1077,7 @@ SPAN_DECLARE(lpc10_decode_state_t *) lpc10_decode_init(lpc10_decode_state_t *s, 
         s->dei[i] = 0.0f;
     for (i = 0;  i < 3;  i++)
         s->deo[i] = 0.0f;
-    
+
     return s;
 }
 /*- End of function --------------------------------------------------------*/
@@ -1084,7 +1090,7 @@ SPAN_DECLARE(int) lpc10_decode_release(lpc10_decode_state_t *s)
 
 SPAN_DECLARE(int) lpc10_decode_free(lpc10_decode_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

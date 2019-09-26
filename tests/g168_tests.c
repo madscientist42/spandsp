@@ -34,16 +34,9 @@
 #include <string.h>
 #include <sndfile.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
-
 #include "spandsp.h"
 #include "spandsp/g168models.h"
 #include "spandsp-sim.h"
-
-#define FALSE 0
-#define TRUE (!FALSE)
 
 typedef struct
 {
@@ -162,7 +155,7 @@ int main(int argc, char *argv[])
                                   0,
                                   0,
                                   0,
-                                  TRUE);
+                                  true);
         tone_gen_init(&tone_state, &tone_desc);
         tone_gen(&tone_state, amp, 8000);
         for (i = 0;  i < 10;  i++)
@@ -316,7 +309,16 @@ int main(int argc, char *argv[])
         printf("%d\n", css_c3[i]);
     signal_free(&local_css);
     signal_free(&far_css);
-    return  0;
+    fir32_free(&line_model_d2);
+    fir32_free(&line_model_d3);
+    fir32_free(&line_model_d4);
+    fir32_free(&line_model_d5);
+    fir32_free(&line_model_d6);
+    fir32_free(&line_model_d7);
+    fir32_free(&line_model_d8);
+    fir32_free(&line_model_d9);
+    fir_float_free(&level_measurement_bp);
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

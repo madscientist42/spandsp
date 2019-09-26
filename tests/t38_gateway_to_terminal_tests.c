@@ -81,10 +81,10 @@ g1050_state_t *path_b_to_a;
 
 double when = 0.0;
 
-int done[2] = {FALSE, FALSE};
-int succeeded[2] = {FALSE, FALSE};
+int done[2] = {false, false};
+int succeeded[2] = {false, false};
 
-int simulate_incrementing_repeats = FALSE;
+int simulate_incrementing_repeats = false;
 
 int t38_version;
 int use_ecm;
@@ -137,7 +137,7 @@ static void phase_e_handler(t30_state_t *s, void *user_data, int result)
     fax_log_rx_parameters(s, tag);
     t30_get_transfer_statistics(s, &t);
     succeeded[i - 'A'] = (result == T30_ERR_OK)  &&  (t.pages_tx == 12  ||  t.pages_rx == 12);
-    done[i - 'A'] = TRUE;
+    done[i - 'A'] = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -257,7 +257,7 @@ static int decode_test(const char *decode_test_file)
 
     memset(t38_amp_a, 0, sizeof(t38_amp_a));
 
-    if ((t38_state_b = t38_terminal_init(NULL, FALSE, tx_packet_handler_b, t38_state_a)) == NULL)
+    if ((t38_state_b = t38_terminal_init(NULL, false, tx_packet_handler_b, t38_state_a)) == NULL)
     {
         fprintf(stderr, "Cannot start the T.38 channel\n");
         exit(2);
@@ -392,17 +392,17 @@ int main(int argc, char *argv[])
     logging_state_t *logging;
     char *decode_test_file;
 
-    log_audio = FALSE;
+    log_audio = false;
     t38_version = 1;
-    use_ecm = FALSE;
+    use_ecm = false;
     input_file_name = INPUT_FILE_NAME;
-    simulate_incrementing_repeats = FALSE;
+    simulate_incrementing_repeats = false;
     g1050_model_no = 0;
     g1050_speed_pattern_no = 1;
-    use_gui = FALSE;
-    use_tep = FALSE;
-    feedback_audio = FALSE;
-    use_transmit_on_idle = TRUE;
+    use_gui = false;
+    use_tep = false;
+    feedback_audio = false;
+    use_transmit_on_idle = true;
     supported_modems = T30_SUPPORT_V27TER | T30_SUPPORT_V29 | T30_SUPPORT_V17;
     decode_test_file = NULL;
     while ((opt = getopt(argc, argv, "d:efgi:Ilm:M:s:tv:")) != -1)
@@ -413,14 +413,14 @@ int main(int argc, char *argv[])
             decode_test_file = optarg;
             break;
         case 'e':
-            use_ecm = TRUE;
+            use_ecm = true;
             break;
         case 'f':
-            feedback_audio = TRUE;
+            feedback_audio = true;
             break;
         case 'g':
 #if defined(ENABLE_GUI)
-            use_gui = TRUE;
+            use_gui = true;
 #else
             fprintf(stderr, "Graphical monitoring not available\n");
             exit(2);
@@ -430,10 +430,10 @@ int main(int argc, char *argv[])
             input_file_name = optarg;
             break;
         case 'I':
-            simulate_incrementing_repeats = TRUE;
+            simulate_incrementing_repeats = true;
             break;
         case 'l':
-            log_audio = TRUE;
+            log_audio = true;
             break;
         case 'm':
             supported_modems = atoi(optarg);
@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
             g1050_speed_pattern_no = atoi(optarg);
             break;
         case 't':
-            use_tep = TRUE;
+            use_tep = true;
             break;
         case 'v':
             t38_version = atoi(optarg);
@@ -489,7 +489,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    if ((fax_state_a = fax_init(NULL, TRUE)) == NULL)
+    if ((fax_state_a = fax_init(NULL, true)) == NULL)
     {
         fprintf(stderr, "Cannot start FAX\n");
         exit(2);
@@ -542,7 +542,7 @@ int main(int argc, char *argv[])
 
     memset(t38_amp_a, 0, sizeof(t38_amp_a));
 
-    if ((t38_state_b = t38_terminal_init(NULL, FALSE, tx_packet_handler_b, t38_state_a)) == NULL)
+    if ((t38_state_b = t38_terminal_init(NULL, false, tx_packet_handler_b, t38_state_a)) == NULL)
     {
         fprintf(stderr, "Cannot start the T.38 channel\n");
         exit(2);
@@ -698,7 +698,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
     printf("Tests passed\n");
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

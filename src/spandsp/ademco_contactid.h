@@ -1,5 +1,5 @@
 /*
- * SpanDSP  a series of DSP components for telephony
+ * SpanDSP - a series of DSP components for telephony
  *
  * ademco_contactid.h  Ademco ContactID alarm protocol
  *
@@ -33,7 +33,7 @@ enum
     ADEMCO_CONTACTID_MESSAGE_TYPE_18 = 0x18,
     ADEMCO_CONTACTID_MESSAGE_TYPE_98 = 0x98
 };
-    
+
 enum
 {
     ADEMCO_CONTACTID_QUALIFIER_NEW_EVENT = 1,

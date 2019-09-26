@@ -188,7 +188,7 @@ typedef struct
 
     /*! 3 seconds of predicted delays for the link */
     double delays[3*G1050_TICKS_PER_SEC];
-    
+
     /*! A count of packets lost on the link. */
     uint32_t lost_packets;
     /*! An extra debug count of packets lost on the link. */
@@ -271,6 +271,8 @@ SPAN_DECLARE(g1050_state_t *) g1050_init(int model,
                                          int speed_pattern,
                                          int packet_size,
                                          int packet_rate);
+
+SPAN_DECLARE(int) g1050_free(g1050_state_t *s);
 
 SPAN_DECLARE(void) g1050_dump_parms(int model, int speed_pattern);
 

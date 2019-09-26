@@ -29,14 +29,14 @@
    paper somewhere. I can't track down where I got the original from,
    so that due recognition can be given. The original had no explicit
    copyright notice, and I hope nobody objects to its use here.
-   
+
    Having a reasonable Gaussian noise generator is pretty important for
    telephony testing (in fact, pretty much any DSP testing), and this
    one seems to have served me OK. Since the generation of Gaussian
    noise is only for test purposes, and not a core system component,
    I don't intend to worry excessively about copyright issues, unless
    someone worries me.
-        
+
    The non-core nature of this code also explains why it is unlikely
    to ever be optimised. */
 
@@ -55,6 +55,7 @@
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/saturated.h"
 #include "spandsp/awgn.h"
@@ -100,8 +101,8 @@ SPAN_DECLARE(awgn_state_t *) awgn_init_dbov(awgn_state_t *s, int idum, float lev
 
     if (s == NULL)
     {
-        if ((s = (awgn_state_t *) malloc(sizeof(*s))) == NULL)
-            return  NULL;
+        if ((s = (awgn_state_t *) span_alloc(sizeof(*s))) == NULL)
+            return NULL;
     }
     if (idum < 0)
         idum = -idum;
@@ -140,7 +141,7 @@ SPAN_DECLARE(int) awgn_release(awgn_state_t *s)
 
 SPAN_DECLARE(int) awgn_free(awgn_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

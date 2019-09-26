@@ -40,8 +40,14 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <time.h>
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 
 #include "spandsp/private/logging.h"
@@ -76,8 +82,8 @@ static void default_message_handler(int level, const char *text)
 SPAN_DECLARE(int) span_log_test(logging_state_t *s, int level)
 {
     if (s  &&  (s->level & SPAN_LOG_SEVERITY_MASK) >= (level & SPAN_LOG_SEVERITY_MASK))
-        return TRUE;
-    return FALSE;
+        return true;
+    return false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -148,10 +154,10 @@ SPAN_DECLARE(int) span_log(logging_state_t *s, int level, const char *format, ..
             __span_message(level, msg);
         /*endif*/
         va_end(arg_ptr);
-        return  1;
+        return 1;
     }
     /*endif*/
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -175,11 +181,23 @@ SPAN_DECLARE(int) span_log_buf(logging_state_t *s, int level, const char *tag, c
 }
 /*- End of function --------------------------------------------------------*/
 
+SPAN_DECLARE(int) span_log_get_level(logging_state_t *s)
+{
+    return s->level;
+}
+/*- End of function --------------------------------------------------------*/
+
 SPAN_DECLARE(int) span_log_set_level(logging_state_t *s, int level)
 {
     s->level = level;
 
-    return  0;
+    return 0;
+}
+/*- End of function --------------------------------------------------------*/
+
+SPAN_DECLARE(const char *) span_log_get_tag(logging_state_t *s)
+{
+    return s->tag;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -187,7 +205,13 @@ SPAN_DECLARE(int) span_log_set_tag(logging_state_t *s, const char *tag)
 {
     s->tag = tag;
 
-    return  0;
+    return 0;
+}
+/*- End of function --------------------------------------------------------*/
+
+SPAN_DECLARE(const char *) span_log_get_protocol(logging_state_t *s)
+{
+    return s->protocol;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -195,7 +219,7 @@ SPAN_DECLARE(int) span_log_set_protocol(logging_state_t *s, const char *protocol
 {
     s->protocol = protocol;
 
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -203,7 +227,7 @@ SPAN_DECLARE(int) span_log_set_sample_rate(logging_state_t *s, int samples_per_s
 {
     s->samples_per_second = samples_per_second;
 
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -211,7 +235,7 @@ SPAN_DECLARE(int) span_log_bump_samples(logging_state_t *s, int samples)
 {
     s->elapsed_samples += samples;
 
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -227,15 +251,15 @@ SPAN_DECLARE(void) span_log_set_error_handler(logging_state_t *s, error_handler_
 }
 /*- End of function --------------------------------------------------------*/
 
-SPAN_DECLARE(void) span_set_message_handler(message_handler_func_t func)
-{
-    __span_message = func;
-}
-/*- End of function --------------------------------------------------------*/
-
 SPAN_DECLARE(void) span_set_error_handler(error_handler_func_t func)
 {
     __span_error = func;
+}
+/*- End of function --------------------------------------------------------*/
+
+SPAN_DECLARE(void) span_set_message_handler(message_handler_func_t func)
+{
+    __span_message = func;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -243,7 +267,7 @@ SPAN_DECLARE(logging_state_t *) span_log_init(logging_state_t *s, int level, con
 {
     if (s == NULL)
     {
-        if ((s = (logging_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (logging_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     s->span_error = __span_error;
@@ -267,7 +291,7 @@ SPAN_DECLARE(int) span_log_release(logging_state_t *s)
 SPAN_DECLARE(int) span_log_free(logging_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

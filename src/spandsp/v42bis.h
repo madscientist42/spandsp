@@ -85,7 +85,7 @@ SPAN_DECLARE(int) v42bis_compress_flush(v42bis_state_t *s);
     \param len The length of the data buffer.
     \return 0 */
 SPAN_DECLARE(int) v42bis_decompress(v42bis_state_t *s, const uint8_t buf[], int len);
-    
+
 /*! Flush out any data remaining in the decompression buffer.
     \param s The V.42bis context.
     \return 0 */
@@ -98,6 +98,12 @@ SPAN_DECLARE(int) v42bis_decompress_flush(v42bis_state_t *s);
             V42BIS_COMPRESSION_MODE_ALWAYS,
             V42BIS_COMPRESSION_MODE_NEVER */
 SPAN_DECLARE(void) v42bis_compression_control(v42bis_state_t *s, int mode);
+
+/*! Get the logging context associated with a V.42bis context.
+    \brief Get the logging context associated with a V.42bis context.
+    \param s The V.42bis context.
+    \return A pointer to the logging context */
+SPAN_DECLARE(logging_state_t *) v42bis_get_logging_state(v42bis_state_t *s);
 
 /*! Initialise a V.42bis context.
     \param s The V.42bis context.

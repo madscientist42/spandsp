@@ -41,6 +41,11 @@
 #define GEN_CONST
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp.h"
@@ -48,9 +53,6 @@
 #include "spandsp/rfc2198_sim.h"
 
 #define PACKET_LOSS_TIME    -1
-
-#define FALSE 0
-#define TRUE (!FALSE)
 
 SPAN_DECLARE(rfc2198_sim_state_t *) rfc2198_sim_init(int model,
                                                      int speed_pattern,
@@ -70,6 +72,14 @@ SPAN_DECLARE(rfc2198_sim_state_t *) rfc2198_sim_init(int model,
 }
 /*- End of function --------------------------------------------------------*/
 
+SPAN_DECLARE(int) rfc2198_sim_free(rfc2198_sim_state_t *s)
+{
+    g1050_free(s->g1050);
+    free(s);
+    return 0;
+}
+/*- End of function --------------------------------------------------------*/
+
 SPAN_DECLARE(int) rfc2198_sim_put(rfc2198_sim_state_t *s,
                                   const uint8_t buf[],
                                   int len,
@@ -86,7 +96,7 @@ SPAN_DECLARE(int) rfc2198_sim_put(rfc2198_sim_state_t *s,
     memcpy(s->tx_pkt[s->next_pkt], buf, len);
     s->tx_pkt_len[s->next_pkt] = len;
     s->tx_pkt_seq_no[s->next_pkt] = seq_no;
-    
+
     /* Construct the redundant packet */
     p = buf2;
     slot = s->next_pkt;
@@ -127,7 +137,7 @@ SPAN_DECLARE(int) rfc2198_sim_get(rfc2198_sim_state_t *s,
     uint8_t *p;
     uint16_t *q;
     int redundancy_depth;
-    
+
     if (s->rx_queued_pkts)
     {
         /* We have some stuff from the last g1050_get() still to deliver */

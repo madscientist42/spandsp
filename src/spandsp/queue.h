@@ -63,7 +63,7 @@ extern "C"
 /*! Check if a queue is empty.
     \brief Check if a queue is empty.
     \param s The queue context.
-    \return TRUE if empty, else FALSE. */
+    \return True if empty, else false. */
 SPAN_DECLARE(int) queue_empty(queue_state_t *s);
 
 /*! Check the available free space in a queue's buffer.

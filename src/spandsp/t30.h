@@ -32,7 +32,7 @@
 
 \section t30_page_sec_1 What does it do?
 The T.30 protocol is the core protocol used for FAX transmission. This module
-implements most of its key featrues. It does not interface to the outside work.
+implements most of its key features. It does not interface to the outside world.
 Seperate modules do that for T.38, analogue line, and other forms of FAX
 communication.
 
@@ -74,7 +74,7 @@ generated according to the specification.
 
 The T.30 spec. specifies a number of time-outs. For example, after dialing a number,
 a calling fax system should listen for a response for 35 seconds before giving up.
-These time-out periods are as follows: 
+These time-out periods are as follows:
 
     - T1 - 35+-5s: the maximum time for which two fax system will attempt to identify each other
     - T2 - 6+-1s:  a time-out used to start the sequence for changing transmit parameters
@@ -86,7 +86,7 @@ ignored, sometimes with good reason. For example, after placing a call, the
 calling fax system is supposed to wait for 35 seconds before giving up. If the
 answering unit does not answer on the first ring or if a voice answering machine
 is connected to the line, or if there are many delays through the network,
-the delay before answer can be much longer than 35 seconds. 
+the delay before answer can be much longer than 35 seconds.
 
 Fax units that support error correction mode (ECM) can respond to a post-image
 handshake message with a receiver not ready (RNR) message. The calling unit then
@@ -95,7 +95,7 @@ answering unit is still busy (printing for example), it will repeat the RNR
 message. According to the T.30 standard, this sequence (RR/RNR RR/RNR) can be
 repeated for up to the end of T5 (60+-5s). However, many fax systems
 ignore the time-out and will continue the sequence indefinitely, unless the user
-manually overrides. 
+manually overrides.
 
 All the time-outs are subject to alteration, and sometimes misuse. Good T.30
 implementations must do the right thing, and tolerate others doing the wrong thing.
@@ -109,7 +109,7 @@ violate this requirement, especially for the silent period between DCS and TCF.
 This may be stretched to well over 100ms. If this period is too long, it can interfere with
 handshake signal error recovery, should a packet be corrupted on the line. Systems
 should ensure they stay within the prescribed T.30 limits, and be tolerant of others
-being out of spec.. 
+being out of spec..
 
 \subsection t30_page_sec_2d Other timing variations
 
@@ -118,7 +118,7 @@ variations in the duration of pauses between unacknowledged handshake message
 repetitions, and also in the pauses between the receipt of a handshake command and
 the start of a response to that command. In order to reduce the total
 transmission time, many fax systems start sending a response message before the
-end of the command has been received. 
+end of the command has been received.
 
 \subsection t30_page_sec_2e Other deviations from the T.30 standard
 
@@ -184,13 +184,13 @@ typedef void (t30_phase_e_handler_t)(t30_state_t *s, void *user_data, int comple
     \brief T.30 real time frame handler.
     \param s The T.30 context.
     \param user_data An opaque pointer.
-    \param direction TRUE for incoming, FALSE for outgoing.
+    \param incoming True for incoming, false for outgoing.
     \param msg The HDLC message.
     \param len The length of the message.
 */
 typedef void (t30_real_time_frame_handler_t)(t30_state_t *s,
                                              void *user_data,
-                                             int direction,
+                                             int incoming,
                                              const uint8_t msg[],
                                              int len);
 
@@ -209,8 +209,8 @@ typedef int (t30_document_handler_t)(t30_state_t *s, void *user_data, int status
     \param user_data An opaque pointer.
     \param type The modem, tone or silence to be sent or received.
     \param bit_rate The bit rate of the modem to be sent or received.
-    \param short_train TRUE if the short training sequence should be used (where one exists).
-    \param use_hdlc FALSE for bit stream, TRUE for HDLC framing.
+    \param short_train True if the short training sequence should be used (where one exists).
+    \param use_hdlc False for bit stream, True for HDLC framing.
 */
 typedef void (t30_set_handler_t)(void *user_data, int type, int bit_rate, int short_train, int use_hdlc);
 
@@ -222,6 +222,28 @@ typedef void (t30_set_handler_t)(void *user_data, int type, int bit_rate, int sh
     \param len The length of the message.
 */
 typedef void (t30_send_hdlc_handler_t)(void *user_data, const uint8_t msg[], int len);
+
+#if 0
+/*!
+    T.30 send document handler.
+    \brief T.30 send document handler.
+    \param user_data An opaque pointer.
+    \param msg The document chunk.
+    \param len The length of the chunk.
+    \return The actual length of the chunk.
+*/
+typedef int (t30_document_get_handler_t)(void *user_data, uint8_t msg[], int len);
+
+/*!
+    T.30 deliver document handler.
+    \brief T.30 deliver handler.
+    \param user_data An opaque pointer.
+    \param msg The document chunk.
+    \param len The length of the chunk.
+    \return The delivery status.
+*/
+typedef int (t30_document_put_handler_t)(void *user_data, const uint8_t msg[], int len);
+#endif
 
 /*!
     T.30 protocol completion codes, at phase E.
@@ -284,11 +306,11 @@ enum
     T30_ERR_BADTAG,             /*! Incorrect values for TIFF/F tags */
     T30_ERR_BADTIFFHDR,         /*! Bad TIFF/F header - incorrect values in fields */
     T30_ERR_NOMEM,              /*! Cannot allocate memory for more pages */
-    
+
     /* General problems */
     T30_ERR_RETRYDCN,           /*! Disconnected after permitted retries */
     T30_ERR_CALLDROPPED,        /*! The call dropped prematurely */
-    
+
     /* Feature negotiation issues */
     T30_ERR_NOPOLL,             /*! Poll not accepted */
     T30_ERR_IDENT_UNACCEPTABLE, /*! Far end's ident is not acceptable */
@@ -519,7 +541,7 @@ typedef struct
 {
     /*! \brief The current bit rate for image transfer. */
     int bit_rate;
-    /*! \brief TRUE if error correcting mode is used. */
+    /*! \brief True if error correcting mode is used. */
     int error_correcting_mode;
     /*! \brief The number of pages sent so far. */
     int pages_tx;
@@ -527,13 +549,13 @@ typedef struct
     int pages_rx;
     /*! \brief The number of pages in the file (<0 if not known). */
     int pages_in_file;
-    /*! \brief The horizontal column-to-column resolution of the most recent page, in pixels per metre */
+    /*! \brief The horizontal column-to-column resolution of the most recent exchanged page, in pixels per metre */
     int x_resolution;
-    /*! \brief The vertical row-to-row resolution of the most recent page, in pixels per metre */
+    /*! \brief The vertical row-to-row resolution of the most recent exchanged page, in pixels per metre */
     int y_resolution;
-    /*! \brief The number of horizontal pixels in the most recent page. */
+    /*! \brief The number of horizontal pixels in the most recent exchanged page. */
     int width;
-    /*! \brief The number of vertical pixels in the most recent page. */
+    /*! \brief The number of vertical pixels in the most recent exchanged page. */
     int length;
     /*! \brief The size of the image, in bytes */
     int image_size;
@@ -563,7 +585,7 @@ extern "C"
 /*! Initialise a T.30 context.
     \brief Initialise a T.30 context.
     \param s The T.30 context.
-    \param calling_party TRUE if the context is for a calling party. FALSE if the
+    \param calling_party True if the context is for a calling party. False if the
            context is for an answering party.
     \param set_rx_type_handler
     \param set_rx_type_user_data
@@ -603,7 +625,7 @@ SPAN_DECLARE(int) t30_restart(t30_state_t *s);
     if the job has finished.
     \brief Check if a T.30 call is still active.
     \param s The T.30 context.
-    \return TRUE for call still active, or FALSE for call completed. */
+    \return True for call still active, or false for call completed. */
 SPAN_DECLARE(int) t30_call_active(t30_state_t *s);
 
 /*! Cleanup a T.30 context if the call terminates.
@@ -661,7 +683,7 @@ SPAN_DECLARE(void) t30_non_ecm_put_chunk(void *user_data, const uint8_t buf[], i
     \param user_data The T.30 context.
     \param msg The HDLC message.
     \param len The length of the message, in octets.
-    \param ok TRUE if the frame was received without error. */
+    \param ok True if the frame was received without error. */
 SPAN_DECLARE_NONSTD(void) t30_hdlc_accept(void *user_data, const uint8_t msg[], int len, int ok);
 
 /*! Report the passage of time to the T.30 engine.
@@ -679,13 +701,13 @@ SPAN_DECLARE(void) t30_get_transfer_statistics(t30_state_t *s, t30_stats_t *t);
 /*! Request a local interrupt of FAX exchange.
     \brief Request a local interrupt of FAX exchange.
     \param s The T.30 context.
-    \param state TRUE to enable interrupt request, else FALSE. */
+    \param state True to enable interrupt request, else false. */
 SPAN_DECLARE(void) t30_local_interrupt_request(t30_state_t *s, int state);
 
 /*! Allow remote interrupts of FAX exchange.
     \brief Allow remote interrupts of FAX exchange.
     \param s The T.30 context.
-    \param state TRUE to allow interruptd, else FALSE. */
+    \param state True to allow interruptd, else false. */
 SPAN_DECLARE(void) t30_remote_interrupts_allowed(t30_state_t *s, int state);
 
 #if defined(__cplusplus)

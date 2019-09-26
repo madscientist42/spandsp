@@ -68,7 +68,7 @@ successive EOL markers, with no pixel data between them.
 */
 
 /*! The buffer length much be a power of two. The chosen length is big enough for
-    over 9s of data at the V.17 14,400bps rate. */    
+    over 9s of data at the V.17 14,400bps rate. */
 #define T38_NON_ECM_TX_BUF_LEN  16384
 
 /*! \brief A flow controlled non-ECM image data buffer, for buffering T.38 to analogue
@@ -83,10 +83,10 @@ extern "C"
 
 /*! \brief Initialise a T.38 rate adapting non-ECM buffer context.
     \param s The buffer context.
-    \param mode TRUE for image data mode, or FALSE for TCF mode.
+    \param image_mode True for image data mode, or false for TCF mode.
     \param bits The minimum number of bits per FAX image row.
     \return A pointer to the buffer context, or NULL if there was a problem. */
-SPAN_DECLARE(t38_non_ecm_buffer_state_t *) t38_non_ecm_buffer_init(t38_non_ecm_buffer_state_t *s, int mode, int min_row_bits);
+SPAN_DECLARE(t38_non_ecm_buffer_state_t *) t38_non_ecm_buffer_init(t38_non_ecm_buffer_state_t *s, int image_mode, int min_row_bits);
 
 SPAN_DECLARE(int) t38_non_ecm_buffer_release(t38_non_ecm_buffer_state_t *s);
 
@@ -94,7 +94,7 @@ SPAN_DECLARE(int) t38_non_ecm_buffer_free(t38_non_ecm_buffer_state_t *s);
 
 /*! \brief Set the mode of a T.38 rate adapting non-ECM buffer context.
     \param s The buffer context.
-    \param mode TRUE for image data mode, or FALSE for TCF mode.
+    \param mode True for image data mode, or false for TCF mode.
     \param bits The minimum number of bits per FAX image row. */
 SPAN_DECLARE(void) t38_non_ecm_buffer_set_mode(t38_non_ecm_buffer_state_t *s, int mode, int min_row_bits);
 

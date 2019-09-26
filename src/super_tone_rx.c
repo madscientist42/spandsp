@@ -45,6 +45,7 @@
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
 #include "spandsp/complex.h"
 #include "spandsp/vector_float.h"
@@ -161,19 +162,19 @@ static int test_cadence(super_tone_rx_segment_t *pattern,
             steps = -steps;
             j = (rotation + steps - 2)%steps;
             if (pattern[j].f1 != test[8].f1  ||  pattern[j].f2 != test[8].f2)
-                return  0;
+                return 0;
             if (pattern[j].min_duration > test[8].min_duration*SUPER_TONE_BINS
                 ||
                 pattern[j].max_duration < test[8].min_duration*SUPER_TONE_BINS)
             {
-                return  0;
+                return 0;
             }
         }
         j = (rotation + steps - 1)%steps;
         if (pattern[j].f1 != test[9].f1  ||  pattern[j].f2 != test[9].f2)
-            return  0;
+            return 0;
         if (pattern[j].max_duration < test[9].min_duration*SUPER_TONE_BINS)
-            return  0;
+            return 0;
     }
     else
     {
@@ -182,16 +183,16 @@ static int test_cadence(super_tone_rx_segment_t *pattern,
         {
             j = i + 10 - steps;
             if (pattern[i].f1 != test[j].f1  ||  pattern[i].f2 != test[j].f2)
-                return  0;
+                return 0;
             if (pattern[i].min_duration > test[j].min_duration*SUPER_TONE_BINS
                 ||
                 pattern[i].max_duration < test[j].min_duration*SUPER_TONE_BINS)
             {
-                return  0;
+                return 0;
             }
         }
     }
-    return  1;
+    return 1;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -199,7 +200,7 @@ SPAN_DECLARE(super_tone_rx_descriptor_t *) super_tone_rx_make_descriptor(super_t
 {
     if (desc == NULL)
     {
-        if ((desc = (super_tone_rx_descriptor_t *) malloc(sizeof(*desc))) == NULL)
+        if ((desc = (super_tone_rx_descriptor_t *) span_alloc(sizeof(*desc))) == NULL)
             return NULL;
     }
     desc->tone_list = NULL;
@@ -222,15 +223,15 @@ SPAN_DECLARE(int) super_tone_rx_free_descriptor(super_tone_rx_descriptor_t *desc
         for (i = 0; i < desc->tones; i++)
         {
             if (desc->tone_list[i])
-                free(desc->tone_list[i]);
+                span_free(desc->tone_list[i]);
         }
         if (desc->tone_list)
-            free(desc->tone_list);
+            span_free(desc->tone_list);
         if (desc->tone_segs)
-            free(desc->tone_segs);
+            span_free(desc->tone_segs);
         if (desc->desc)
-            free(desc->desc);
-        free(desc);
+            span_free(desc->desc);
+        span_free(desc);
     }
     return 0;
 }
@@ -265,7 +266,7 @@ SPAN_DECLARE(super_tone_rx_state_t *) super_tone_rx_init(super_tone_rx_state_t *
         return NULL;
     if (s == NULL)
     {
-        if ((s = (super_tone_rx_state_t *) malloc(sizeof(*s) + desc->monitored_frequencies*sizeof(goertzel_state_t))) == NULL)
+        if ((s = (super_tone_rx_state_t *) span_alloc(sizeof(*s) + desc->monitored_frequencies*sizeof(goertzel_state_t))) == NULL)
             return NULL;
     }
 
@@ -288,7 +289,7 @@ SPAN_DECLARE(super_tone_rx_state_t *) super_tone_rx_init(super_tone_rx_state_t *
 #endif
     for (i = 0;  i < desc->monitored_frequencies;  i++)
         goertzel_init(&s->state[i], &s->desc->desc[i]);
-    return  s;
+    return s;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -301,7 +302,7 @@ SPAN_DECLARE(int) super_tone_rx_release(super_tone_rx_state_t *s)
 SPAN_DECLARE(int) super_tone_rx_free(super_tone_rx_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

@@ -22,7 +22,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 /*! \file */
 
 #if defined(HAVE_CONFIG_H)
@@ -40,9 +40,15 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 #include "spandsp/queue.h"
 #include "spandsp/async.h"
@@ -62,6 +68,7 @@
 #include "spandsp/private/queue.h"
 #include "spandsp/private/tone_generate.h"
 #include "spandsp/private/async.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/fsk.h"
 #include "spandsp/private/dtmf.h"
 #include "spandsp/private/modem_connect_tones.h"
@@ -72,19 +79,19 @@
 /*
     Ways in which a V.18 call may start
     -----------------------------------
-    
+
     Originate:
         ANS
             Silence for 0.5s then send TXP
         DTMF
             Proceed as Annex B
-        1650Hz (V21 ch 2 low)
+        1650Hz (V21 ch 2 low) [1650Hz +-12Hz]
             Proceed as Annex F in call mode
-        1300Hz (Calling tone)
+        1300Hz (Calling tone) [1300Hz +-16Hz]
             Proceed as Annex E in call mode
-        1400Hz/1800Hz (Weitbrecht)
+        1400Hz/1800Hz (Weitbrecht) [1400Hz +-5% and 1800Hz +-5%]
             Detect rate and proceed as Annex A
-        980Hz/1180Hz (V21 ch 1)
+        980Hz/1180Hz (V21 ch 1) [980Hz +-12Hz, 1180Hz +-12Hz]
             Start timer Tr
         2225Hz (Bell ANS)
             Proceed as Annex D call mode
@@ -98,21 +105,21 @@
             Monitor as caller for 980Hz or 1300Hz
         CI/XCI
             Respond with ANSam
-        1300Hz
+        1300Hz [1300Hz +-16Hz]
             Probe
         Timer Ta (3s)
             Probe
-        1400Hz/1800Hz (Weitbrecht)
+        1400Hz/1800Hz (Weitbrecht) [1400Hz +-5% and 1800Hz +-5%]
             Detect rate and proceed as Annex A
         DTMF
             Proceed as Annex B
-        980Hz (V21 ch 1 low)
+        980Hz (V21 ch 1 low) [980Hz +-12Hz]
             Start timer Te
         1270Hz (Bell103 ch 2 high)
             Proceed as Annex D answer mode
         2225Hz (Bell ANS)
             Proceed as Annex D call mode
-        1650Hz (V21 ch 2 low)
+        1650Hz (V21 ch 2 low) [1650Hz +-12Hz]
             Proceed as Annex F answer mode
         ANSam
             Proceed as V.8 caller Annex G
@@ -131,6 +138,7 @@ struct dtmf_to_ascii_s
 
 static const struct dtmf_to_ascii_s dtmf_to_ascii[] =
 {
+    {"###0", '!'},
     {"###1", 'C'},
     {"###2", 'F'},
     {"###3", 'I'},
@@ -140,7 +148,6 @@ static const struct dtmf_to_ascii_s dtmf_to_ascii[] =
     {"###7", 'U'},
     {"###8", 'X'},
     {"###9", ';'},
-    {"###0", '!'},
     {"##*1", 'A'},
     {"##*2", 'D'},
     {"##*3", 'G'},
@@ -373,6 +380,33 @@ static const uint8_t txp[] = "1111111111000101011100001101110000010101";
     100 ms mark. */
 static const uint8_t xci[] = "01111111110111111111";
 
+SPAN_DECLARE(const char *) v18_mode_to_str(int mode)
+{
+    switch ((mode & 0xFF))
+    {
+    case V18_MODE_NONE:
+        return "None";
+    case V18_MODE_5BIT_45:
+        return "Weitbrecht TDD (45.45bps)";
+    case V18_MODE_5BIT_50:
+        return "Weitbrecht TDD (50bps)";
+    case V18_MODE_DTMF:
+        return "DTMF";
+    case V18_MODE_EDT:
+        return "EDT";
+    case V18_MODE_BELL103:
+        return "Bell 103";
+    case V18_MODE_V23VIDEOTEX:
+        return "Videotex";
+    case V18_MODE_V21TEXTPHONE:
+        return "V.21";
+    case V18_MODE_V18TEXTPHONE:
+        return "V.18 text telephone";
+    }
+    return "???";
+}
+/*- End of function --------------------------------------------------------*/
+
 static int cmp(const void *s, const void *t)
 {
     const char *ss;
@@ -389,7 +423,7 @@ SPAN_DECLARE(int) v18_encode_dtmf(v18_state_t *s, char dtmf[], const char msg[])
     const char *t;
     char *u;
     const char *v;
-    
+
     t = msg;
     u = dtmf;
     while (*t)
@@ -645,14 +679,14 @@ static int v18_tdd_get_async_byte(void *user_data)
 {
     v18_state_t *s;
     int ch;
-    
+
     s = (v18_state_t *) user_data;
     if ((ch = queue_read_byte(&s->queue.queue)) >= 0)
         return ch;
     if (s->tx_signal_on)
     {
         /* The FSK should now be switched off. */
-        s->tx_signal_on = FALSE;
+        s->tx_signal_on = false;
     }
     return 0x1F;
 }
@@ -668,7 +702,7 @@ static void v18_tdd_put_async_byte(void *user_data, int byte)
 {
     v18_state_t *s;
     uint8_t octet;
-    
+
     s = (v18_state_t *) user_data;
     if (byte < 0)
     {
@@ -741,13 +775,13 @@ SPAN_DECLARE_NONSTD(int) v18_tx(v18_state_t *s, int16_t *amp, int max_len)
         {
         case V18_MODE_DTMF:
             if (len < max_len)
-                len += dtmf_tx(&s->dtmftx, amp, max_len - len);
+                len += dtmf_tx(&s->dtmf_tx, amp, max_len - len);
             break;
         default:
             if (len < max_len)
             {
-                if ((lenx = fsk_tx(&s->fsktx, amp + len, max_len - len)) <= 0)
-                    s->tx_signal_on = FALSE;
+                if ((lenx = fsk_tx(&s->fsk_tx, amp + len, max_len - len)) <= 0)
+                    s->tx_signal_on = false;
                 len += lenx;
             }
             break;
@@ -766,10 +800,10 @@ SPAN_DECLARE_NONSTD(int) v18_rx(v18_state_t *s, const int16_t amp[], int len)
         s->in_progress -= len;
         if (s->in_progress <= 0)
             s->rx_msg_len = 0;
-        dtmf_rx(&s->dtmfrx, amp, len);
+        dtmf_rx(&s->dtmf_rx, amp, len);
         break;
     default:
-        fsk_rx(&s->fskrx, amp, len);
+        fsk_rx(&s->fsk_rx, amp, len);
         break;
     }
     return 0;
@@ -806,7 +840,7 @@ SPAN_DECLARE(int) v18_put(v18_state_t *s, const char msg[], int len)
                 /* TODO: Deal with out of space condition */
                 if (queue_write(&s->queue.queue, (const uint8_t *) buf, n) < 0)
                     return i;
-                s->tx_signal_on = TRUE;
+                s->tx_signal_on = true;
             }
         }
         return len;
@@ -831,7 +865,7 @@ SPAN_DECLARE(v18_state_t *) v18_init(v18_state_t *s,
 {
     if (s == NULL)
     {
-        if ((s = (v18_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (v18_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
     memset(s, 0, sizeof(*s));
@@ -843,55 +877,55 @@ SPAN_DECLARE(v18_state_t *) v18_init(v18_state_t *s,
     switch (s->mode)
     {
     case V18_MODE_5BIT_45:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_WEITBRECHT], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 5, ASYNC_PARITY_NONE, 2, FALSE, v18_tdd_get_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_WEITBRECHT], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 5, ASYNC_PARITY_NONE, 2, false, v18_tdd_get_async_byte, s);
         /* Schedule an explicit shift at the start of baudot transmission */
         s->baudot_tx_shift = 2;
         /* TDD uses 5 bit data, no parity and 1.5 stop bits. We scan for the first stop bit, and
            ride over the fraction. */
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_WEITBRECHT], FSK_FRAME_MODE_5N1_FRAMES, v18_tdd_put_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_WEITBRECHT], FSK_FRAME_MODE_5N1_FRAMES, v18_tdd_put_async_byte, s);
         s->baudot_rx_shift = 0;
         //s->repeat_shifts = mode & 0x100;
         break;
     case V18_MODE_5BIT_50:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_WEITBRECHT50], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 5, ASYNC_PARITY_NONE, 2, FALSE, v18_tdd_get_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_WEITBRECHT50], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 5, ASYNC_PARITY_NONE, 2, false, v18_tdd_get_async_byte, s);
         /* Schedule an explicit shift at the start of baudot transmission */
         s->baudot_tx_shift = 2;
         /* TDD uses 5 bit data, no parity and 1.5 stop bits. We scan for the first stop bit, and
            ride over the fraction. */
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_WEITBRECHT50], FSK_FRAME_MODE_5N1_FRAMES, v18_tdd_put_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_WEITBRECHT50], FSK_FRAME_MODE_5N1_FRAMES, v18_tdd_put_async_byte, s);
         s->baudot_rx_shift = 0;
         //s->repeat_shifts = mode & 0x100;
         break;
     case V18_MODE_DTMF:
-        dtmf_tx_init(&s->dtmftx);
-        dtmf_rx_init(&s->dtmfrx, v18_rx_dtmf, s);
+        dtmf_tx_init(&s->dtmf_tx);
+        dtmf_rx_init(&s->dtmf_rx, v18_rx_dtmf, s);
         break;
     case V18_MODE_EDT:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_V21CH1_110], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 7, ASYNC_PARITY_EVEN, 2, FALSE, v18_edt_get_async_byte, s);
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_V21CH1_110], FSK_FRAME_MODE_7E2_FRAMES, v18_edt_put_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_V21CH1_110], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 7, ASYNC_PARITY_EVEN, 2, false, v18_edt_get_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_V21CH1_110], FSK_FRAME_MODE_7E2_FRAMES, v18_edt_put_async_byte, s);
         break;
     case V18_MODE_BELL103:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_BELL103CH1], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 7, ASYNC_PARITY_EVEN, 1, FALSE, v18_edt_get_async_byte, s);
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_BELL103CH2], FSK_FRAME_MODE_7E1_FRAMES, v18_bell103_put_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_BELL103CH1], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 7, ASYNC_PARITY_EVEN, 1, false, v18_edt_get_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_BELL103CH2], FSK_FRAME_MODE_7E1_FRAMES, v18_bell103_put_async_byte, s);
         break;
     case V18_MODE_V23VIDEOTEX:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_V23CH1], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 7, ASYNC_PARITY_EVEN, 1, FALSE, v18_edt_get_async_byte, s);
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_V23CH2], FSK_FRAME_MODE_7E1_FRAMES, v18_videotex_put_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_V23CH1], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 7, ASYNC_PARITY_EVEN, 1, false, v18_edt_get_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_V23CH2], FSK_FRAME_MODE_7E1_FRAMES, v18_videotex_put_async_byte, s);
         break;
     case V18_MODE_V21TEXTPHONE:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_V21CH1], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 7, ASYNC_PARITY_EVEN, 1, FALSE, v18_edt_get_async_byte, s);
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_V21CH1], FSK_FRAME_MODE_7E1_FRAMES, v18_textphone_put_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_V21CH1], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 7, ASYNC_PARITY_EVEN, 1, false, v18_edt_get_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_V21CH1], FSK_FRAME_MODE_7E1_FRAMES, v18_textphone_put_async_byte, s);
         break;
     case V18_MODE_V18TEXTPHONE:
-        fsk_tx_init(&s->fsktx, &preset_fsk_specs[FSK_V21CH1], async_tx_get_bit, &s->asynctx);
-        async_tx_init(&s->asynctx, 7, ASYNC_PARITY_EVEN, 1, FALSE, v18_edt_get_async_byte, s);
-        fsk_rx_init(&s->fskrx, &preset_fsk_specs[FSK_V21CH1], FSK_FRAME_MODE_7E1_FRAMES, v18_textphone_put_async_byte, s);
+        fsk_tx_init(&s->fsk_tx, &preset_fsk_specs[FSK_V21CH1], async_tx_get_bit, &s->async_tx);
+        async_tx_init(&s->async_tx, 7, ASYNC_PARITY_EVEN, 1, false, v18_edt_get_async_byte, s);
+        fsk_rx_init(&s->fsk_rx, &preset_fsk_specs[FSK_V21CH1], FSK_FRAME_MODE_7E1_FRAMES, v18_textphone_put_async_byte, s);
         break;
     }
     queue_init(&s->queue.queue, 128, QUEUE_READ_ATOMIC | QUEUE_WRITE_ATOMIC);
@@ -907,35 +941,8 @@ SPAN_DECLARE(int) v18_release(v18_state_t *s)
 
 SPAN_DECLARE(int) v18_free(v18_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
-}
-/*- End of function --------------------------------------------------------*/
-
-SPAN_DECLARE(const char *) v18_mode_to_str(int mode)
-{
-    switch ((mode & 0xFF))
-    {
-    case V18_MODE_NONE:
-        return "None";
-    case V18_MODE_5BIT_45:
-        return "Weitbrecht TDD (45.45bps)";
-    case V18_MODE_5BIT_50:
-        return "Weitbrecht TDD (50bps)";
-    case V18_MODE_DTMF:
-        return "DTMF";
-    case V18_MODE_EDT:
-        return "EDT";
-    case V18_MODE_BELL103:
-        return "Bell 103";
-    case V18_MODE_V23VIDEOTEX:
-        return "Videotex";
-    case V18_MODE_V21TEXTPHONE:
-        return "V.21";
-    case V18_MODE_V18TEXTPHONE:
-        return "V.18 text telephone";
-    }
-    return "???";
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

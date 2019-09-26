@@ -648,6 +648,10 @@ COMP_VENDOR_LDFLAGS
 COMP_VENDOR_CFLAGS
 CPPFLAGS_FOR_BUILD
 CC_FOR_BUILD
+COND_NEON_FALSE
+COND_NEON_TRUE
+COND_AVX2_FALSE
+COND_AVX2_TRUE
 COND_AVX_FALSE
 COND_AVX_TRUE
 COND_SSE5_FALSE
@@ -825,6 +829,8 @@ enable_sse4_2
 enable_sse4a
 enable_sse5
 enable_avx
+enable_avx2
+enable_neon
 enable_fixed_point
 enable_builtin_tiff
 '
@@ -1483,6 +1489,8 @@ Optional Features:
   --enable-sse4a       Enable SSE4A support
   --enable-sse5        Enable SSE5 support
   --enable-avx         Enable AVX support
+  --enable-avx2        Enable AVX2 support
+  --enable-neon        Enable NEON support
   --enable-fixed-point Enable fixed point support
   --enable-builtin-tiff   build with builtin libtiff
 
@@ -16560,6 +16568,16 @@ if test "${enable_avx+set}" = set; then :
   enableval=$enable_avx;
 fi
 
+# Check whether --enable-avx2 was given.
+if test "${enable_avx2+set}" = set; then :
+  enableval=$enable_avx2;
+fi
+
+# Check whether --enable-neon was given.
+if test "${enable_neon+set}" = set; then :
+  enableval=$enable_neon;
+fi
+
 # Check whether --enable-fixed_point was given.
 if test "${enable_fixed_point+set}" = set; then :
   enableval=$enable_fixed_point;
@@ -17137,6 +17155,39 @@ fi
 $as_echo "$ac_cv_c99_flexible_array" >&6; }
 
 
+for ac_func in aligned_alloc
+do :
+  ac_fn_c_check_func "$LINENO" "aligned_alloc" "ac_cv_func_aligned_alloc"
+if test "x$ac_cv_func_aligned_alloc" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ALIGNED_ALLOC 1
+_ACEOF
+
+fi
+done
+
+for ac_func in memalign
+do :
+  ac_fn_c_check_func "$LINENO" "memalign" "ac_cv_func_memalign"
+if test "x$ac_cv_func_memalign" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_MEMALIGN 1
+_ACEOF
+
+fi
+done
+
+for ac_func in posix_memalign
+do :
+  ac_fn_c_check_func "$LINENO" "posix_memalign" "ac_cv_func_posix_memalign"
+if test "x$ac_cv_func_posix_memalign" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_POSIX_MEMALIGN 1
+_ACEOF
+
+fi
+done
+
 for ac_func in memmove
 do :
   ac_fn_c_check_func "$LINENO" "memmove" "ac_cv_func_memmove"
@@ -17507,6 +17558,18 @@ _ACEOF
  INSERT_STDBOOL_HEADER="#include <stdbool.h>"
 else
   INSERT_STDBOOL_HEADER="#include <spandsp/stdbool.h>"
+fi
+
+done
+
+for ac_header in stdfix.h
+do :
+  ac_fn_c_check_header_mongrel "$LINENO" "stdfix.h" "ac_cv_header_stdfix_h" "$ac_includes_default"
+if test "x$ac_cv_header_stdfix_h" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STDFIX_H 1
+_ACEOF
+
 fi
 
 done
@@ -19659,6 +19722,12 @@ fi
 case "${ax_cv_c_compiler_vendor}" in
 gnu)
     COMP_VENDOR_CFLAGS="-std=gnu99 -ffast-math -Wall -Wunused-variable -Wunused-but-set-variable -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes $COMP_VENDOR_CFLAGS"
+    if test "$enable_neon" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mfpu=neon -mfloat-abi=hard $COMP_VENDOR_CFLAGS"
+    fi
+    if test "$enable_avx2" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mavx2 $COMP_VENDOR_CFLAGS"
+    fi
     if test "$enable_avx" = "yes" ; then
         COMP_VENDOR_CFLAGS="-mavx $COMP_VENDOR_CFLAGS"
     fi
@@ -19734,6 +19803,9 @@ sun)
     ;;
 intel)
     COMP_VENDOR_CFLAGS="-std=c99 -D_POSIX_C_SOURCE=2 -D_GNU_SOURCE=1 -Wall -Wunused-variable -Wunused-but-set-variable -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes $COMP_VENDOR_CFLAGS"
+    if test "$enable_avx2" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mavx2 $COMP_VENDOR_CFLAGS"
+    fi
     if test "$enable_avx" = "yes" ; then
         COMP_VENDOR_CFLAGS="-mavx $COMP_VENDOR_CFLAGS"
     fi
@@ -19850,65 +19922,82 @@ else
   SPANDSP_MISALIGNED_ACCESS_FAILS="#undef SPANDSP_MISALIGNED_ACCESS_FAILS"
 fi
 
-if test "$enable_avx" = "yes" ; then
+case "${host}" in
+armv7bl | armv7-*)
+    if test "$enable_neon" = "yes" ; then
+
+$as_echo "#define SPANDSP_USE_ARM_NEON 1" >>confdefs.h
+
+    fi
+    ;;
+x86_64-* | i386-* | i686-*)
+    if test "$enable_avx2" = "yes" ; then
+
+$as_echo "#define SPANDSP_USE_AVX2 1" >>confdefs.h
+
+        enable_avx="yes"
+    fi
+    if test "$enable_avx" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_AVX 1" >>confdefs.h
 
-    enable_sse5"yes"
-fi
-if test "$enable_sse5" = "yes" ; then
+        enable_sse5"yes"
+    fi
+    if test "$enable_sse5" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE5 1" >>confdefs.h
 
-    enable_sse4a="yes"
-fi
-if test "$enable_sse4a" = "yes" ; then
+        enable_sse4a="yes"
+    fi
+    if test "$enable_sse4a" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE4A 1" >>confdefs.h
 
-    enable_sse4_2="yes"
-fi
-if test "$enable_sse4_2" = "yes" ; then
+        enable_sse4_2="yes"
+    fi
+    if test "$enable_sse4_2" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE4_2 1" >>confdefs.h
 
-    enable_sse4_1="yes"
-fi
-if test "$enable_sse4_1" = "yes" ; then
+        enable_sse4_1="yes"
+    fi
+    if test "$enable_sse4_1" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE4_1 1" >>confdefs.h
 
-    enable_ssse3="yes"
-fi
-if test "$enable_ssse3" = "yes" ; then
+        enable_ssse3="yes"
+    fi
+    if test "$enable_ssse3" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSSE3 1" >>confdefs.h
 
-    enable_sse3="yes"
-fi
-if test "$enable_sse3" = "yes" ; then
+        enable_sse3="yes"
+    fi
+    if test "$enable_sse3" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE3 1" >>confdefs.h
 
-    enable_sse2="yes"
-fi
-if test "$enable_sse2" = "yes" ; then
+        enable_sse2="yes"
+    fi
+    if test "$enable_sse2" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE2 1" >>confdefs.h
 
-    enable_sse="yes"
-fi
-if test "$enable_sse" = "yes" ; then
+        enable_sse="yes"
+    fi
+    if test "$enable_sse" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_SSE 1" >>confdefs.h
 
-    enable_mmx="yes"
-fi
-if test "$enable_mmx" = "yes" ; then
+        enable_mmx="yes"
+    fi
+    if test "$enable_mmx" = "yes" ; then
 
 $as_echo "#define SPANDSP_USE_MMX 1" >>confdefs.h
 
-fi
+    fi
+    ;;
+esac
 
  if test "$enable_doc" = yes; then
   COND_DOC_TRUE=
@@ -20012,6 +20101,22 @@ fi
 else
   COND_AVX_TRUE='#'
   COND_AVX_FALSE=
+fi
+
+ if test "$enable_avx2" = yes; then
+  COND_AVX2_TRUE=
+  COND_AVX2_FALSE='#'
+else
+  COND_AVX2_TRUE='#'
+  COND_AVX2_FALSE=
+fi
+
+ if test "$enable_neon" = yes; then
+  COND_NEON_TRUE=
+  COND_NEON_FALSE='#'
+else
+  COND_NEON_TRUE='#'
+  COND_NEON_FALSE=
 fi
 
 
@@ -20370,6 +20475,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${COND_AVX_TRUE}" && test -z "${COND_AVX_FALSE}"; then
   as_fn_error $? "conditional \"COND_AVX\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_AVX2_TRUE}" && test -z "${COND_AVX2_FALSE}"; then
+  as_fn_error $? "conditional \"COND_AVX2\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${COND_NEON_TRUE}" && test -z "${COND_NEON_FALSE}"; then
+  as_fn_error $? "conditional \"COND_NEON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 

@@ -145,6 +145,8 @@ AC_ARG_ENABLE(sse4_2,       [  --enable-sse4-2      Enable SSE4.2 support])
 AC_ARG_ENABLE(sse4a,        [  --enable-sse4a       Enable SSE4A support])
 AC_ARG_ENABLE(sse5,         [  --enable-sse5        Enable SSE5 support])
 AC_ARG_ENABLE(avx,          [  --enable-avx         Enable AVX support])
+AC_ARG_ENABLE(avx2,         [  --enable-avx2        Enable AVX2 support])
+AC_ARG_ENABLE(neon,         [  --enable-neon        Enable NEON support])
 AC_ARG_ENABLE(fixed_point,  [  --enable-fixed-point Enable fixed point support])
 # The following is for MSVC, where we may be using a local copy of libtiff, built alongside spandsp
 AC_ARG_ENABLE(builtin_tiff,
@@ -171,6 +173,9 @@ fi
 
 AX_C99_FLEXIBLE_ARRAY
 
+AC_CHECK_FUNCS([aligned_alloc])
+AC_CHECK_FUNCS([memalign])
+AC_CHECK_FUNCS([posix_memalign])
 AC_CHECK_FUNCS([memmove])
 AC_CHECK_FUNCS([memset])
 AC_CHECK_FUNCS([select])
@@ -193,6 +198,7 @@ AC_CHECK_HEADERS([inttypes.h], [INSERT_INTTYPES_HEADER="#include <inttypes.h>"])
 AC_CHECK_HEADERS([stdint.h], [INSERT_STDINT_HEADER="#include <stdint.h>"])
 AC_CHECK_HEADERS([stdatomic.h])
 AC_CHECK_HEADERS([stdbool.h], [INSERT_STDBOOL_HEADER="#include <stdbool.h>"], [INSERT_STDBOOL_HEADER="#include <spandsp/stdbool.h>"])
+AC_CHECK_HEADERS([stdfix.h])
 AC_CHECK_HEADERS([unistd.h])
 AC_CHECK_HEADERS([stdlib.h])
 AC_CHECK_HEADERS([string.h])
@@ -332,6 +338,12 @@ AX_CHECK_EXPORT_CAPABILITY([$host],
 case "${ax_cv_c_compiler_vendor}" in
 gnu)
     COMP_VENDOR_CFLAGS="-std=gnu99 -ffast-math -Wall -Wunused-variable -Wunused-but-set-variable -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes $COMP_VENDOR_CFLAGS"
+    if test "$enable_neon" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mfpu=neon -mfloat-abi=hard $COMP_VENDOR_CFLAGS"
+    fi
+    if test "$enable_avx2" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mavx2 $COMP_VENDOR_CFLAGS"
+    fi
     if test "$enable_avx" = "yes" ; then
         COMP_VENDOR_CFLAGS="-mavx $COMP_VENDOR_CFLAGS"
     fi
@@ -393,6 +405,9 @@ sun)
     ;;
 intel)
     COMP_VENDOR_CFLAGS="-std=c99 -D_POSIX_C_SOURCE=2 -D_GNU_SOURCE=1 -Wall -Wunused-variable -Wunused-but-set-variable -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes $COMP_VENDOR_CFLAGS"
+    if test "$enable_avx2" = "yes" ; then
+        COMP_VENDOR_CFLAGS="-mavx2 $COMP_VENDOR_CFLAGS"
+    fi
     if test "$enable_avx" = "yes" ; then
         COMP_VENDOR_CFLAGS="-mavx $COMP_VENDOR_CFLAGS"
     fi
@@ -447,45 +462,58 @@ AX_MISALIGNED_ACCESS_FAILS([$host],
     SPANDSP_MISALIGNED_ACCESS_FAILS="#define SPANDSP_MISALIGNED_ACCESS_FAILS 1"],
     [SPANDSP_MISALIGNED_ACCESS_FAILS="#undef SPANDSP_MISALIGNED_ACCESS_FAILS"])
 
-if test "$enable_avx" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_AVX], [1], [Use the AVX instruction set (i386 and x86_64 only).])
-    enable_sse5"yes"
-fi
-if test "$enable_sse5" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE5], [1], [Use the SSE5 instruction set (i386 and x86_64 only).])
-    enable_sse4a="yes"
-fi
-if test "$enable_sse4a" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE4A], [1], [Use the SSE4A instruction set (i386 and x86_64 only).])
-    enable_sse4_2="yes"
-fi
-if test "$enable_sse4_2" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE4_2], [1], [Use the SSE4.2 instruction set (i386 and x86_64 only).])
-    enable_sse4_1="yes"
-fi
-if test "$enable_sse4_1" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE4_1], [1], [Use the SSE4.1 instruction set (i386 and x86_64 only).])
-    enable_ssse3="yes"
-fi
-if test "$enable_ssse3" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSSE3], [1], [Use the SSSE3 instruction set (i386 and x86_64 only).])
-    enable_sse3="yes"
-fi
-if test "$enable_sse3" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE3], [1], [Use the SSE3 instruction set (i386 and x86_64 only).])
-    enable_sse2="yes"
-fi
-if test "$enable_sse2" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE2], [1], [Use the SSE2 instruction set (i386 and x86_64 only).])
-    enable_sse="yes"
-fi
-if test "$enable_sse" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_SSE], [1], [Use the SSE instruction set (i386 and x86_64 only).])
-    enable_mmx="yes"
-fi
-if test "$enable_mmx" = "yes" ; then
-    AC_DEFINE([SPANDSP_USE_MMX], [1], [Use the MMX instruction set (i386 and x86_64 only).])
-fi
+case "${host}" in
+armv7[bl] | armv7-*)
+    if test "$enable_neon" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_ARM_NEON], [1], [Use the NEON instruction set (ARMV7 only).])
+    fi
+    ;;
+x86_64-* | i386-* | i686-*)
+    if test "$enable_avx2" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_AVX2], [1], [Use the AVX2 instruction set (i386 and x86_64 only).])
+        enable_avx="yes"
+    fi
+    if test "$enable_avx" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_AVX], [1], [Use the AVX instruction set (i386 and x86_64 only).])
+        enable_sse5"yes"
+    fi
+    if test "$enable_sse5" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE5], [1], [Use the SSE5 instruction set (i386 and x86_64 only).])
+        enable_sse4a="yes"
+    fi
+    if test "$enable_sse4a" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE4A], [1], [Use the SSE4A instruction set (i386 and x86_64 only).])
+        enable_sse4_2="yes"
+    fi
+    if test "$enable_sse4_2" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE4_2], [1], [Use the SSE4.2 instruction set (i386 and x86_64 only).])
+        enable_sse4_1="yes"
+    fi
+    if test "$enable_sse4_1" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE4_1], [1], [Use the SSE4.1 instruction set (i386 and x86_64 only).])
+        enable_ssse3="yes"
+    fi
+    if test "$enable_ssse3" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSSE3], [1], [Use the SSSE3 instruction set (i386 and x86_64 only).])
+        enable_sse3="yes"
+    fi
+    if test "$enable_sse3" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE3], [1], [Use the SSE3 instruction set (i386 and x86_64 only).])
+        enable_sse2="yes"
+    fi
+    if test "$enable_sse2" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE2], [1], [Use the SSE2 instruction set (i386 and x86_64 only).])
+        enable_sse="yes"
+    fi
+    if test "$enable_sse" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_SSE], [1], [Use the SSE instruction set (i386 and x86_64 only).])
+        enable_mmx="yes"
+    fi
+    if test "$enable_mmx" = "yes" ; then
+        AC_DEFINE([SPANDSP_USE_MMX], [1], [Use the MMX instruction set (i386 and x86_64 only).])
+    fi
+    ;;
+esac
 
 AM_CONDITIONAL([COND_DOC], [test "$enable_doc" = yes])
 AM_CONDITIONAL([COND_TESTS], [test "$enable_tests" = yes])
@@ -500,6 +528,8 @@ AM_CONDITIONAL([COND_SSE4_2], [test "$enable_sse4_2" = yes])
 AM_CONDITIONAL([COND_SSE4A], [test "$enable_sse4a" = yes])
 AM_CONDITIONAL([COND_SSE5], [test "$enable_sse5" = yes])
 AM_CONDITIONAL([COND_AVX], [test "$enable_avx" = yes])
+AM_CONDITIONAL([COND_AVX2], [test "$enable_avx2" = yes])
+AM_CONDITIONAL([COND_NEON], [test "$enable_neon" = yes])
 
 if test "$enable_builtin_tiff" = "yes" ; then
     abs_tiffdir="`cd $srcdir/../tiff-3.8.2/ && pwd`"

@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #if defined(HAVE_TGMATH_H)
 #include <tgmath.h>
 #endif
@@ -55,12 +56,11 @@
 #include <libxml/xinclude.h>
 #endif
 
-//#if defined(WITH_SPANDSP_INTERNALS)
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 
+#include "fax_utils.h"
 #include "fax_tester.h"
 
 #define HDLC_FRAMING_OK_THRESHOLD       5
@@ -104,7 +104,7 @@ static void hdlc_underflow_handler(void *user_data)
     uint8_t buf[400];
 
     s = (faxtester_state_t *) user_data;
-    
+
     if (s->image_buffer)
     {
         /* We are sending an ECM image */
@@ -180,7 +180,7 @@ static void tone_detected(void *user_data, int tone, int level, int delay)
                  SPAN_LOG_FLOW,
                  "Tone was on for %fs\n",
                  (float) (s->timer - s->tone_on_time)/SAMPLE_RATE + 0.55);
-    }    
+    }
     s->tone_state = tone;
     if (tone == MODEM_CONNECT_TONES_NONE)
         front_end_step_complete(s);
@@ -247,23 +247,23 @@ static void non_ecm_rx_status(void *user_data, int status)
     switch (status)
     {
     case SIG_STATUS_TRAINING_FAILED:
-        s->modems.rx_trained = FALSE;
+        s->modems.rx_trained = false;
         break;
     case SIG_STATUS_TRAINING_SUCCEEDED:
         /* The modem is now trained */
-        s->modems.rx_trained = TRUE;
+        s->modems.rx_trained = true;
         break;
     case SIG_STATUS_CARRIER_UP:
-        s->modems.rx_signal_present = TRUE;
+        s->modems.rx_signal_present = true;
         break;
     case SIG_STATUS_CARRIER_DOWN:
         if (s->modems.rx_trained)
         {
             if (s->real_time_frame_handler)
-                s->real_time_frame_handler(s, s->real_time_frame_user_data, TRUE, NULL, 0);
+                s->real_time_frame_handler(s, s->real_time_frame_user_data, true, NULL, 0);
         }
-        s->modems.rx_signal_present = FALSE;
-        s->modems.rx_trained = FALSE;
+        s->modems.rx_signal_present = false;
+        s->modems.rx_trained = false;
         break;
     }
 }
@@ -288,18 +288,18 @@ static void hdlc_rx_status(void *user_data, int status)
     switch (status)
     {
     case SIG_STATUS_TRAINING_FAILED:
-        s->modems.rx_trained = FALSE;
+        s->modems.rx_trained = false;
         break;
     case SIG_STATUS_TRAINING_SUCCEEDED:
         /* The modem is now trained */
-        s->modems.rx_trained = TRUE;
+        s->modems.rx_trained = true;
         break;
     case SIG_STATUS_CARRIER_UP:
-        s->modems.rx_signal_present = TRUE;
+        s->modems.rx_signal_present = true;
         break;
     case SIG_STATUS_CARRIER_DOWN:
-        s->modems.rx_signal_present = FALSE;
-        s->modems.rx_trained = FALSE;
+        s->modems.rx_signal_present = false;
+        s->modems.rx_trained = false;
         break;
     }
 }
@@ -316,7 +316,7 @@ static void hdlc_accept(void *user_data, const uint8_t *msg, int len, int ok)
     }
     s = (faxtester_state_t *) user_data;
     if (s->real_time_frame_handler)
-        s->real_time_frame_handler(s, s->real_time_frame_user_data, TRUE, msg, len);
+        s->real_time_frame_handler(s, s->real_time_frame_user_data, true, msg, len);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -395,7 +395,7 @@ int faxtester_rx(faxtester_state_t *s, int16_t *amp, int len)
     {
         if (!s->modems.rx_signal_present)
         {
-            s->wait_for_silence = FALSE;
+            s->wait_for_silence = false;
             front_end_step_complete(s);
         }
     }
@@ -406,7 +406,7 @@ int faxtester_rx(faxtester_state_t *s, int16_t *amp, int len)
 int faxtester_tx(faxtester_state_t *s, int16_t *amp, int max_len)
 {
     int len;
-    
+
     len = 0;
     if (s->transmit)
     {
@@ -420,7 +420,7 @@ int faxtester_tx(faxtester_state_t *s, int16_t *amp, int max_len)
                 {
                     /* Pad to the requested length with silence */
                     memset(amp + len, 0, (max_len - len)*sizeof(int16_t));
-                    len = max_len;        
+                    len = max_len;
                 }
                 break;
             }
@@ -432,7 +432,7 @@ int faxtester_tx(faxtester_state_t *s, int16_t *amp, int max_len)
         {
             /* Pad to the requested length with silence */
             memset(amp, 0, max_len*sizeof(int16_t));
-            len = max_len;        
+            len = max_len;
         }
     }
     return len;
@@ -441,7 +441,7 @@ int faxtester_tx(faxtester_state_t *s, int16_t *amp, int max_len)
 
 void faxtest_set_rx_silence(faxtester_state_t *s)
 {
-    s->wait_for_silence = TRUE;
+    s->wait_for_silence = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -463,7 +463,7 @@ void faxtester_set_rx_type(void *user_data, int type, int bit_rate, int short_tr
     {
         put_bit_func = (put_bit_func_t) hdlc_rx_put_bit;
         put_bit_user_data = (void *) &t->hdlc_rx;
-        hdlc_rx_init(&t->hdlc_rx, FALSE, FALSE, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, s);
+        hdlc_rx_init(&t->hdlc_rx, false, false, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, s);
     }
     else
     {
@@ -495,13 +495,13 @@ void faxtester_set_rx_type(void *user_data, int type, int bit_rate, int short_tr
         t->rx_user_data = &t->v21_rx;
         break;
     case T30_MODEM_V27TER:
-        v27ter_rx_restart(&t->fast_modems.v27ter_rx, bit_rate, FALSE);
+        v27ter_rx_restart(&t->fast_modems.v27ter_rx, bit_rate, false);
         v27ter_rx_set_put_bit(&t->fast_modems.v27ter_rx, put_bit_func, put_bit_user_data);
         t->rx_handler = (span_rx_handler_t *) &v27ter_v21_rx;
         t->rx_user_data = s;
         break;
     case T30_MODEM_V29:
-        v29_rx_restart(&t->fast_modems.v29_rx, bit_rate, FALSE);
+        v29_rx_restart(&t->fast_modems.v29_rx, bit_rate, false);
         v29_rx_set_put_bit(&t->fast_modems.v29_rx, put_bit_func, put_bit_user_data);
         t->rx_handler = (span_rx_handler_t *) &v29_v21_rx;
         t->rx_user_data = s;
@@ -551,7 +551,7 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         silence_gen_alter(&t->silence_gen, ms_to_samples(short_train));
         t->tx_handler = (span_tx_handler_t *) &silence_gen;
         t->tx_user_data = &t->silence_gen;
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_CED:
     case T30_MODEM_CNG:
@@ -562,14 +562,14 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         modem_connect_tones_tx_init(&t->connect_tx, tone);
         t->tx_handler = (span_tx_handler_t *) &modem_connect_tones_tx;
         t->tx_user_data = &t->connect_tx;
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_V21:
         fsk_tx_init(&t->v21_tx, &preset_fsk_specs[FSK_V21CH2], get_bit_func, get_bit_user_data);
         fsk_tx_set_modem_status_handler(&t->v21_tx, modem_tx_status, (void *) s);
         t->tx_handler = (span_tx_handler_t *) &fsk_tx;
         t->tx_user_data = &t->v21_tx;
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_V27TER:
         v27ter_tx_restart(&t->fast_modems.v27ter_tx, bit_rate, t->use_tep);
@@ -579,7 +579,7 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         t->tx_user_data = &t->fast_modems.v27ter_tx;
         /* For any fast modem, set 200ms of preamble flags */
         hdlc_tx_flags(&t->hdlc_tx, bit_rate/(8*5));
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_V29:
         v29_tx_restart(&t->fast_modems.v29_tx, bit_rate, t->use_tep);
@@ -589,7 +589,7 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         t->tx_user_data = &t->fast_modems.v29_tx;
         /* For any fast modem, set 200ms of preamble flags */
         hdlc_tx_flags(&t->hdlc_tx, bit_rate/(8*5));
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_V17:
         v17_tx_restart(&t->fast_modems.v17_tx, bit_rate, t->use_tep, short_train);
@@ -599,7 +599,7 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         t->tx_user_data = &t->fast_modems.v17_tx;
         /* For any fast modem, set 200ms of preamble flags */
         hdlc_tx_flags(&t->hdlc_tx, bit_rate/(8*5));
-        s->transmit = TRUE;
+        s->transmit = true;
         break;
     case T30_MODEM_DONE:
         span_log(&s->logging, SPAN_LOG_FLOW, "FAX exchange complete\n");
@@ -608,7 +608,7 @@ void faxtester_set_tx_type(void *user_data, int type, int bit_rate, int short_tr
         silence_gen_alter(&t->silence_gen, 0);
         t->tx_handler = (span_tx_handler_t *) &silence_gen;
         t->tx_user_data = &t->silence_gen;
-        s->transmit = FALSE;
+        s->transmit = false;
         break;
     }
     s->current_tx_type = type;
@@ -661,8 +661,8 @@ static void faxtester_fax_modems_init(fax_modems_state_t *s, int use_tep, void *
 {
     s->use_tep = use_tep;
 
-    hdlc_rx_init(&s->hdlc_rx, FALSE, FALSE, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, user_data);
-    hdlc_tx_init(&s->hdlc_tx, FALSE, 2, FALSE, hdlc_underflow_handler, user_data);
+    hdlc_rx_init(&s->hdlc_rx, false, false, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, user_data);
+    hdlc_tx_init(&s->hdlc_tx, false, 2, false, hdlc_underflow_handler, user_data);
     fsk_rx_init(&s->v21_rx, &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, (put_bit_func_t) hdlc_rx_put_bit, &s->hdlc_rx);
     fsk_rx_signal_cutoff(&s->v21_rx, -45.5);
     fsk_tx_init(&s->v21_tx, &preset_fsk_specs[FSK_V21CH2], (get_bit_func_t) hdlc_tx_get_bit, &s->hdlc_tx);
@@ -685,7 +685,7 @@ static void faxtester_fax_modems_init(fax_modems_state_t *s, int use_tep, void *
                                 user_data);
     dc_restore_init(&s->dc_restore);
 
-    s->rx_signal_present = FALSE;
+    s->rx_signal_present = false;
     s->rx_handler = (span_rx_handler_t *) &span_dummy_rx;
     s->rx_user_data = NULL;
     s->tx_handler = (span_tx_handler_t *) &silence_gen;
@@ -693,7 +693,7 @@ static void faxtester_fax_modems_init(fax_modems_state_t *s, int use_tep, void *
 }
 /*- End of function --------------------------------------------------------*/
 
-faxtester_state_t *faxtester_init(faxtester_state_t *s, int calling_party)
+faxtester_state_t *faxtester_init(faxtester_state_t *s)
 {
     if (s == NULL)
     {
@@ -704,9 +704,9 @@ faxtester_state_t *faxtester_init(faxtester_state_t *s, int calling_party)
     memset(s, 0, sizeof(*s));
     span_log_init(&s->logging, SPAN_LOG_NONE, NULL);
     span_log_set_protocol(&s->logging, "TST");
-    faxtester_fax_modems_init(&s->modems, FALSE, s);
+    faxtester_fax_modems_init(&s->modems, false, s);
     faxtester_set_timeout(s, -1);
-    faxtester_set_tx_type(s, T30_MODEM_NONE, 0, FALSE, FALSE);
+    faxtester_set_tx_type(s, T30_MODEM_NONE, 0, false, false);
 
     return s;
 }

@@ -43,14 +43,6 @@
 
 #include "spandsp.h"
 
-#ifndef FALSE
-#define FALSE    0
-#endif
-
-#ifndef TRUE
-#define TRUE    (!FALSE)
-#endif
-
 int main(int argc, char *argv[])
 {
     struct tm tms;

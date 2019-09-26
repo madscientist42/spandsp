@@ -42,6 +42,11 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <assert.h>
 #if defined(LOG_FAX_AUDIO)
@@ -50,8 +55,10 @@
 #include <tiffio.h>
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 #include "spandsp/queue.h"
+#include "spandsp/vector_int.h"
 #include "spandsp/dc_restore.h"
 #include "spandsp/bit_operations.h"
 #include "spandsp/power_meter.h"
@@ -91,6 +98,7 @@
 
 #include "spandsp/private/logging.h"
 #include "spandsp/private/silence_gen.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/fsk.h"
 #include "spandsp/private/v17tx.h"
 #include "spandsp/private/v17rx.h"
@@ -131,6 +139,9 @@
 /*! The number of transmissions of terminating data IFP packets */
 #define DATA_END_TX_COUNT                       3
 
+/*! The number of consecutive flags to declare HDLC framing is OK. */
+#define HDLC_FRAMING_OK_THRESHOLD               5
+
 enum
 {
     DISBIT1 = 0x01,
@@ -170,9 +181,6 @@ enum
 /*! The maximum number of bytes to be zapped, in order to corrupt NSF,
     NSS and NSC messages, so the receiver does not recognise them. */
 #define MAX_NSX_SUPPRESSION             10
-
-/*! The number of consecutive flags to declare HDLC framing is OK. */
-#define HDLC_FRAMING_OK_THRESHOLD       5
 
 static uint8_t nsx_overwrite[2][MAX_NSX_SUPPRESSION] =
 {
@@ -428,22 +436,22 @@ static int set_next_tx_type(t38_gateway_state_t *s)
             ||
             t->tx_handler == (span_tx_handler_t *) &tone_gen)
         {
-            set_rx_active(s, TRUE);
+            set_rx_active(s, true);
         }
         else
         {
-            set_rx_active(s, FALSE);
+            set_rx_active(s, false);
         }
         /*endif*/
-        return TRUE;
+        return true;
     }
     /*endif*/
     u = &s->core.hdlc_to_modem;
     if (u->in == u->out)
-        return FALSE;
+        return false;
     /*endif*/
     if ((u->buf[u->out].contents & FLAG_INDICATOR) == 0)
-        return FALSE;
+        return false;
     /*endif*/
     indicator = (u->buf[u->out].contents & 0xFF);
     u->buf[u->out].len = 0;
@@ -456,7 +464,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
     if (s->core.image_data_mode  &&  s->core.ecm_mode)
     {
         span_log(&s->logging, SPAN_LOG_FLOW, "HDLC mode\n");
-        hdlc_tx_init(&t->hdlc_tx, FALSE, 2, TRUE, hdlc_underflow_handler, s);
+        hdlc_tx_init(&t->hdlc_tx, false, 2, true, hdlc_underflow_handler, s);
         get_bit_func = (get_bit_func_t) hdlc_tx_get_bit;
         get_bit_user_data = (void *) &t->hdlc_tx;
     }
@@ -475,7 +483,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         //silence_gen_set(&t->silence_gen, ms_to_samples(75));
         set_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
         set_next_tx_handler(s, (span_tx_handler_t *) NULL, NULL);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_CNG:
         t->tx_bit_rate = 0;
@@ -483,25 +491,25 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         set_tx_handler(s, (span_tx_handler_t *) &modem_connect_tones_tx, &t->connect_tx);
         silence_gen_set(&t->silence_gen, 0);
         set_next_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_CED:
         t->tx_bit_rate = 0;
         modem_connect_tones_tx_init(&t->connect_tx, MODEM_CONNECT_TONES_FAX_CED);
         set_tx_handler(s, (span_tx_handler_t *) &modem_connect_tones_tx, &t->connect_tx);
         set_next_tx_handler(s, (span_tx_handler_t *) NULL, NULL);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_V21_PREAMBLE:
         t->tx_bit_rate = 300;
-        hdlc_tx_init(&t->hdlc_tx, FALSE, 2, TRUE, hdlc_underflow_handler, s);
+        hdlc_tx_init(&t->hdlc_tx, false, 2, true, hdlc_underflow_handler, s);
         hdlc_tx_flags(&t->hdlc_tx, 32);
         silence_gen_alter(&t->silence_gen, ms_to_samples(75));
         u->buf[u->in].len = 0;
         fsk_tx_init(&t->v21_tx, &preset_fsk_specs[FSK_V21CH2], (get_bit_func_t) hdlc_tx_get_bit, &t->hdlc_tx);
         set_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
         set_next_tx_handler(s, (span_tx_handler_t *) &fsk_tx, &t->v21_tx);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_V27TER_2400_TRAINING:
     case T38_IND_V27TER_4800_TRAINING:
@@ -520,7 +528,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         v27ter_tx_set_get_bit(&t->fast_modems.v27ter_tx, get_bit_func, get_bit_user_data);
         set_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
         set_next_tx_handler(s, (span_tx_handler_t *) &v27ter_tx, &t->fast_modems.v27ter_tx);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_V29_7200_TRAINING:
     case T38_IND_V29_9600_TRAINING:
@@ -539,7 +547,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         v29_tx_set_get_bit(&t->fast_modems.v29_tx, get_bit_func, get_bit_user_data);
         set_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
         set_next_tx_handler(s, (span_tx_handler_t *) &v29_tx, &t->fast_modems.v29_tx);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_V17_7200_SHORT_TRAINING:
     case T38_IND_V17_7200_LONG_TRAINING:
@@ -549,32 +557,32 @@ static int set_next_tx_type(t38_gateway_state_t *s)
     case T38_IND_V17_12000_LONG_TRAINING:
     case T38_IND_V17_14400_SHORT_TRAINING:
     case T38_IND_V17_14400_LONG_TRAINING:
-        short_train = FALSE;
+        short_train = false;
         switch (indicator)
         {
         case T38_IND_V17_7200_SHORT_TRAINING:
-            short_train = TRUE;
+            short_train = true;
             t->tx_bit_rate = 7200;
             break;
         case T38_IND_V17_7200_LONG_TRAINING:
             t->tx_bit_rate = 7200;
             break;
         case T38_IND_V17_9600_SHORT_TRAINING:
-            short_train = TRUE;
+            short_train = true;
             t->tx_bit_rate = 9600;
             break;
         case T38_IND_V17_9600_LONG_TRAINING:
             t->tx_bit_rate = 9600;
             break;
         case T38_IND_V17_12000_SHORT_TRAINING:
-            short_train = TRUE;
+            short_train = true;
             t->tx_bit_rate = 12000;
             break;
         case T38_IND_V17_12000_LONG_TRAINING:
             t->tx_bit_rate = 12000;
             break;
         case T38_IND_V17_14400_SHORT_TRAINING:
-            short_train = TRUE;
+            short_train = true;
             t->tx_bit_rate = 14400;
             break;
         case T38_IND_V17_14400_LONG_TRAINING:
@@ -587,7 +595,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         v17_tx_set_get_bit(&t->fast_modems.v17_tx, get_bit_func, get_bit_user_data);
         set_tx_handler(s, (span_tx_handler_t *) &silence_gen, &t->silence_gen);
         set_next_tx_handler(s, (span_tx_handler_t *) &v17_tx, &t->fast_modems.v17_tx);
-        set_rx_active(s, TRUE);
+        set_rx_active(s, true);
         break;
     case T38_IND_V8_ANSAM:
         t->tx_bit_rate = 300;
@@ -619,7 +627,7 @@ static int set_next_tx_type(t38_gateway_state_t *s)
         hdlc_tx_flags(&t->hdlc_tx, t->tx_bit_rate/(8*5));
     /*endif*/
     s->t38x.in_progress_rx_indicator = indicator;
-    return TRUE;
+    return true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -687,7 +695,7 @@ static void edit_control_messages(t38_gateway_state_t *s, int from_modem, uint8_
                    processed, 2 machines which recognise each other might do special things
                    we cannot handle as a middle man. */
                 span_log(&s->logging, SPAN_LOG_FLOW, "Corrupting %s message to prevent recognition\n", t30_frametype(buf[2]));
-                s->t38x.corrupt_current_frame[from_modem] = TRUE;
+                s->t38x.corrupt_current_frame[from_modem] = true;
             }
             /*endif*/
             break;
@@ -785,26 +793,19 @@ static void monitor_control_messages(t38_gateway_state_t *s,
         uint8_t dcs_code;
     } modem_codes[] =
     {
-        {14400, FAX_MODEM_V17_RX,       DISBIT6},
-        {12000, FAX_MODEM_V17_RX,       (DISBIT6 | DISBIT4)},
-        { 9600, FAX_MODEM_V17_RX,       (DISBIT6 | DISBIT3)},
-        { 9600, FAX_MODEM_V29_RX,       DISBIT3},
+        {14400, FAX_MODEM_V17_RX,       (DISBIT6                    )},
+        {12000, FAX_MODEM_V17_RX,       (DISBIT6 | DISBIT4          )},
+        { 9600, FAX_MODEM_V17_RX,       (DISBIT6 |           DISBIT3)},
+        { 9600, FAX_MODEM_V29_RX,       (                    DISBIT3)},
         { 7200, FAX_MODEM_V17_RX,       (DISBIT6 | DISBIT4 | DISBIT3)},
-        { 7200, FAX_MODEM_V29_RX,       (DISBIT4 | DISBIT3)},
-        { 4800, FAX_MODEM_V27TER_RX,    DISBIT4},
-        { 2400, FAX_MODEM_V27TER_RX,    0},
-        {    0, FAX_MODEM_NONE,         0}
+        { 7200, FAX_MODEM_V29_RX,       (          DISBIT4 | DISBIT3)},
+        { 4800, FAX_MODEM_V27TER_RX,    (          DISBIT4          )},
+        { 2400, FAX_MODEM_V27TER_RX,    (0                          )},
+        {    0, FAX_MODEM_NONE,         (0                          )}
     };
     static const int minimum_scan_line_times[8] =
     {
-        20,
-        5,
-        10,
-        0,
-        40,
-        0,
-        0,
-        0
+        20,  5, 10,  0, 40,  0,  0,  0
     };
     int dcs_code;
     int i;
@@ -822,8 +823,8 @@ static void monitor_control_messages(t38_gateway_state_t *s,
     case T30_CFR:
         /* We are changing from TCF exchange to image exchange */
         /* Successful training means we should change to short training */
-        s->core.image_data_mode = TRUE;
-        s->core.short_train = TRUE;
+        s->core.image_data_mode = true;
+        s->core.short_train = true;
         span_log(&s->logging, SPAN_LOG_FLOW, "CFR - short train = %d, ECM = %d\n", s->core.short_train, s->core.ecm_mode);
         if (!from_modem)
             restart_rx_modem(s);
@@ -832,8 +833,8 @@ static void monitor_control_messages(t38_gateway_state_t *s,
     case T30_RTN:
     case T30_RTP:
         /* We are going back to the exchange of fresh TCF */
-        s->core.image_data_mode = FALSE;
-        s->core.short_train = FALSE;
+        s->core.image_data_mode = false;
+        s->core.short_train = false;
         break;
     case T30_CTC:
         if (len >= 5)
@@ -860,7 +861,7 @@ static void monitor_control_messages(t38_gateway_state_t *s,
         /* T.30 says the first image data after this does full training, yet does not
            return to TCF. This seems to be the sole case of long training for image
            data. */
-        s->core.short_train = FALSE;
+        s->core.short_train = false;
         break;
     case T30_DTC:
     case T30_DCS:
@@ -869,8 +870,8 @@ static void monitor_control_messages(t38_gateway_state_t *s,
            correct modem. */
         s->core.fast_bit_rate = 0;
         s->core.fast_rx_modem = FAX_MODEM_NONE;
-        s->core.image_data_mode = FALSE;
-        s->core.short_train = FALSE;
+        s->core.image_data_mode = false;
+        s->core.short_train = false;
         if (from_modem)
             s->core.timed_mode = TIMED_MODE_TCF_PREDICTABLE_MODEM_START_BEGIN;
         /*endif*/
@@ -885,10 +886,11 @@ static void monitor_control_messages(t38_gateway_state_t *s,
                 /*endif*/
             }
             /*endfor*/
-            /* If we are processing a message from the modem side, the contents determine the fast receive modem.
-               we are to use. If it comes from the T.38 side the contents do not. */
+            /* If we are processing a DCS message from the modem side, the contents determine the fast
+               receive modem we are to use. If it comes from the T.38 side the contents do not. For a
+               DTC message this is reversed. */
             s->core.fast_bit_rate = modem_codes[i].bit_rate;
-            if (from_modem)
+            if ((buf[2] == T30_DTC  &&  !from_modem)  ||  (buf[2] != T30_DTC  &&  from_modem))
                 s->core.fast_rx_modem = modem_codes[i].modem_type;
             /*endif*/
         }
@@ -920,13 +922,13 @@ static void monitor_control_messages(t38_gateway_state_t *s,
                the fast modem again, so abandon our idea of it. */
             s->core.fast_bit_rate = 0;
             s->core.fast_rx_modem = FAX_MODEM_NONE;
-            s->core.image_data_mode = FALSE;
-            s->core.short_train = FALSE;
+            s->core.image_data_mode = false;
+            s->core.short_train = false;
 #endif
             /* Fall through */
         case T30_MPS:
         case T30_PRI_MPS:
-            s->core.count_page_on_mcf = TRUE;
+            s->core.count_page_on_mcf = true;
             break;
         }
         /*endswitch*/
@@ -946,15 +948,15 @@ static void monitor_control_messages(t38_gateway_state_t *s,
            the fast modem again, so abandon our idea of it. */
         s->core.fast_bit_rate = 0;
         s->core.fast_rx_modem = FAX_MODEM_NONE;
-        s->core.image_data_mode = FALSE;
-        s->core.short_train = FALSE;
+        s->core.image_data_mode = false;
+        s->core.short_train = false;
 #endif
         /* Fall through */
     case T30_MPS:
     case T30_MPS | 1:
     case T30_PRI_MPS:
     case T30_PRI_MPS | 1:
-        s->core.count_page_on_mcf = TRUE;
+        s->core.count_page_on_mcf = true;
         break;
     case T30_MCF:
     case T30_MCF | 1:
@@ -962,7 +964,7 @@ static void monitor_control_messages(t38_gateway_state_t *s,
         {
             s->core.pages_confirmed++;
             span_log(&s->logging, SPAN_LOG_FLOW, "Pages confirmed = %d\n", s->core.pages_confirmed);
-            s->core.count_page_on_mcf = FALSE;
+            s->core.count_page_on_mcf = false;
         }
         /*endif*/
         break;
@@ -978,7 +980,7 @@ static void queue_missing_indicator(t38_gateway_state_t *s, int data_type)
     t38_core_state_t *t;
     int expected;
     int expected_alt;
-    
+
     t = &s->t38x.t38;
     expected = -1;
     expected_alt = -1;
@@ -1060,7 +1062,7 @@ static void queue_missing_indicator(t38_gateway_state_t *s, int data_type)
 static int process_rx_missing(t38_core_state_t *t, void *user_data, int rx_seq_no, int expected_seq_no)
 {
     t38_gateway_state_t *s;
-    
+
     s = (t38_gateway_state_t *) user_data;
     s->core.hdlc_to_modem.buf[s->core.hdlc_to_modem.in].flags |= HDLC_FLAG_MISSING_DATA;
     return 0;
@@ -1229,7 +1231,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             {
                 xx->t38.v34_rate = t38_v34rate_to_bps(buf, len);
                 span_log(&s->logging, SPAN_LOG_FLOW, "V.34 rate %d bps\n", xx->t38.v34_rate);
-            }   
+            }
             else
             {
                 span_log(&s->logging, SPAN_LOG_FLOW, "Bad length for V34rate message - %d\n", len);
@@ -1292,9 +1294,9 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             {
                 if ((hdlc_buf->flags & HDLC_FLAG_MISSING_DATA) == 0)
                 {
-                    monitor_control_messages(s, FALSE, hdlc_buf->buf, hdlc_buf->len);
+                    monitor_control_messages(s, false, hdlc_buf->buf, hdlc_buf->len);
                     if (s->core.real_time_frame_handler)
-                        s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, FALSE, hdlc_buf->buf, hdlc_buf->len);
+                        s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, false, hdlc_buf->buf, hdlc_buf->len);
                     /*endif*/
                 }
                 /*endif*/
@@ -1305,11 +1307,11 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
                    long training. There has to be more than one value HDLC frame in a
                    chunk of image data, so just setting short training mode here should
                    be enough. */
-                s->core.short_train = TRUE;
+                s->core.short_train = true;
             }
             /*endif*/
             hdlc_buf->contents = (data_type | FLAG_DATA);
-            finalise_hdlc_frame(s, TRUE);
+            finalise_hdlc_frame(s, true);
         }
         else
         {
@@ -1317,7 +1319,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             hdlc_buf->contents = 0;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_HDLC_FCS_BAD:
         xx->current_rx_field_class = T38_FIELD_CLASS_HDLC;
@@ -1343,7 +1345,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             }
             /*endif*/
             hdlc_buf->contents = (data_type | FLAG_DATA);
-            finalise_hdlc_frame(s, FALSE);
+            finalise_hdlc_frame(s, false);
         }
         else
         {
@@ -1351,7 +1353,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             hdlc_buf->contents = 0;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_HDLC_FCS_OK_SIG_END:
         xx->current_rx_field_class = T38_FIELD_CLASS_HDLC;
@@ -1380,9 +1382,9 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             {
                 if ((hdlc_buf->flags & HDLC_FLAG_MISSING_DATA) == 0)
                 {
-                    monitor_control_messages(s, FALSE, hdlc_buf->buf, hdlc_buf->len);
+                    monitor_control_messages(s, false, hdlc_buf->buf, hdlc_buf->len);
                     if (s->core.real_time_frame_handler)
-                        s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, FALSE, hdlc_buf->buf, hdlc_buf->len);
+                        s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, false, hdlc_buf->buf, hdlc_buf->len);
                     /*endif*/
                 }
                 /*endif*/
@@ -1393,11 +1395,11 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
                    long training. There has to be more than one value HDLC frame in a
                    chunk of image data, so just setting short training mode here should
                    be enough. */
-                s->core.short_train = TRUE;
+                s->core.short_train = true;
             }
             /*endif*/
             hdlc_buf->contents = (data_type | FLAG_DATA);
-            finalise_hdlc_frame(s, TRUE);
+            finalise_hdlc_frame(s, true);
         }
         else
         {
@@ -1411,7 +1413,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             xx->current_rx_field_class = T38_FIELD_CLASS_NONE;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_HDLC_FCS_BAD_SIG_END:
         xx->current_rx_field_class = T38_FIELD_CLASS_HDLC;
@@ -1437,7 +1439,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             }
             /*endif*/
             hdlc_buf->contents = (data_type | FLAG_DATA);
-            finalise_hdlc_frame(s, FALSE);
+            finalise_hdlc_frame(s, false);
         }
         else
         {
@@ -1451,7 +1453,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             xx->current_rx_field_class = T38_FIELD_CLASS_NONE;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_HDLC_SIG_END:
         hdlc_buf = &s->core.hdlc_to_modem.buf[s->core.hdlc_to_modem.in];
@@ -1483,7 +1485,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             }
             else
             {
-                /* This message is expected under 2 circumstances. One is as an alternative to T38_FIELD_HDLC_FCS_OK_SIG_END - 
+                /* This message is expected under 2 circumstances. One is as an alternative to T38_FIELD_HDLC_FCS_OK_SIG_END -
                    i.e. they send T38_FIELD_HDLC_FCS_OK, and then T38_FIELD_HDLC_SIG_END when the carrier actually drops.
                    The other is because the HDLC signal drops unexpectedly - i.e. not just after a final frame. In
                    this case we just clear out any partial frame data that might be in the buffer. */
@@ -1497,7 +1499,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             xx->current_rx_field_class = T38_FIELD_CLASS_NONE;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_T4_NON_ECM_DATA:
         if (xx->current_rx_field_class == T38_FIELD_CLASS_NONE)
@@ -1513,7 +1515,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
         if (len > 0)
             t38_non_ecm_buffer_inject(&s->core.non_ecm_to_modem, buf, len);
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     case T38_FIELD_T4_NON_ECM_SIG_END:
         if (xx->current_rx_field_class == T38_FIELD_CLASS_NONE)
@@ -1568,7 +1570,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
             xx->current_rx_field_class = T38_FIELD_CLASS_NONE;
         }
         /*endif*/
-        xx->corrupt_current_frame[0] = FALSE;
+        xx->corrupt_current_frame[0] = false;
         break;
     default:
         break;
@@ -1599,7 +1601,7 @@ static int process_rx_data(t38_core_state_t *t, void *user_data, int data_type, 
 static void set_octets_per_data_packet(t38_gateway_state_t *s, int bit_rate)
 {
     int octets;
-    
+
     //octets = s->core.ms_per_tx_chunk*bit_rate/(8*1000);
     octets = DEFAULT_MS_PER_TX_CHUNK*bit_rate/(8*1000);
     if (octets < 1)
@@ -1720,11 +1722,11 @@ static void non_ecm_rx_status(void *user_data, int status)
         break;
     case SIG_STATUS_TRAINING_SUCCEEDED:
         /* The modem is now trained */
-        s->audio.modems.rx_signal_present = TRUE;
-        s->audio.modems.rx_trained = TRUE;
+        s->audio.modems.rx_signal_present = true;
+        s->audio.modems.rx_trained = true;
         s->core.timed_mode = TIMED_MODE_IDLE;
         s->core.samples_to_timeout = 0;
-        s->core.short_train = TRUE;
+        s->core.short_train = true;
         to_t38_buffer_init(&s->core.to_t38);
         break;
     case SIG_STATUS_CARRIER_UP:
@@ -1811,7 +1813,7 @@ static void non_ecm_put_bit(void *user_data, int bit)
 {
     t38_gateway_state_t *t;
     t38_gateway_to_t38_state_t *s;
-    
+
     if (bit < 0)
     {
         non_ecm_rx_status(user_data, bit);
@@ -1840,7 +1842,7 @@ static void non_ecm_remove_fill_and_put_bit(void *user_data, int bit)
 {
     t38_gateway_state_t *t;
     t38_gateway_to_t38_state_t *s;
-    
+
     if (bit < 0)
     {
         non_ecm_rx_status(user_data, bit);
@@ -1900,11 +1902,11 @@ static void hdlc_rx_status(hdlc_rx_state_t *t, int status)
         break;
     case SIG_STATUS_TRAINING_SUCCEEDED:
         /* The modem is now trained. */
-        s->audio.modems.rx_signal_present = TRUE;
-        s->audio.modems.rx_trained = TRUE;
-        s->core.short_train = TRUE;
+        s->audio.modems.rx_signal_present = true;
+        s->audio.modems.rx_trained = true;
+        s->core.short_train = true;
         /* Behave like HDLC preamble has been announced. */
-        t->framing_ok_announced = TRUE;
+        t->framing_ok_announced = true;
         to_t38_buffer_init(&s->core.to_t38);
         break;
     case SIG_STATUS_CARRIER_UP:
@@ -1913,7 +1915,7 @@ static void hdlc_rx_status(hdlc_rx_state_t *t, int status)
         t->len = 0;
         t->num_bits = 0;
         t->flags_seen = 0;
-        t->framing_ok_announced = FALSE;
+        t->framing_ok_announced = false;
         to_t38_buffer_init(&s->core.to_t38);
         break;
     case SIG_STATUS_CARRIER_DOWN:
@@ -1922,7 +1924,7 @@ static void hdlc_rx_status(hdlc_rx_state_t *t, int status)
             category = (s->t38x.current_tx_data_type == T38_DATA_V21)  ?  T38_PACKET_CATEGORY_CONTROL_DATA_END  :  T38_PACKET_CATEGORY_IMAGE_DATA_END;
             t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_SIG_END, NULL, 0, category);
             t38_core_send_indicator(&s->t38x.t38, T38_IND_NO_SIGNAL);
-            t->framing_ok_announced = FALSE;
+            t->framing_ok_announced = false;
         }
         /*endif*/
         restart_rx_modem(s);
@@ -1951,10 +1953,10 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
     t38_gateway_state_t *s;
     t38_gateway_to_t38_state_t *u;
     int category;
-    
+
     s = (t38_gateway_state_t *) t->frame_user_data;
     u = &s->core.to_t38;
-    if ((t->raw_bit_stream & 0x80))
+    if ((t->raw_bit_stream & 0x01))
     {
         /* Hit HDLC abort */
         t->rx_aborts++;
@@ -1962,6 +1964,23 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
             t->flags_seen = 0;
         else
             t->flags_seen = t->framing_ok_threshold - 1;
+        /*endif*/
+        if (t->len > 0)
+        {
+            span_log(&s->logging, SPAN_LOG_FLOW, "HDLC frame aborted at %d\n", t->len);
+            /* If we have sent some of this frame we need to treat the abort as though it is a CRC error,
+               as reporting a bad CRC is the only way T.38 allows us to scrub a frame in progress. */
+            /* It seems some boxes may not like us sending a _SIG_END here, and then another
+               when the carrier actually drops. Lets just send T38_FIELD_HDLC_FCS_OK here. */
+            if (t->len > 2)
+            {
+                category = (s->t38x.current_tx_data_type == T38_DATA_V21)  ?  T38_PACKET_CATEGORY_CONTROL_DATA  :  T38_PACKET_CATEGORY_IMAGE_DATA;
+                if (t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_FCS_BAD, NULL, 0, category) < 0)
+                    span_log(&s->logging, SPAN_LOG_WARNING, "T.38 send failed\n");
+                /*endif*/
+            }
+            /*endif*/
+        }
         /*endif*/
     }
     else
@@ -2008,9 +2027,9 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
                         span_log(&s->logging, SPAN_LOG_FLOW, "HDLC frame type %s, CRC OK\n", t30_frametype(t->buffer[2]));
                         if (s->t38x.current_tx_data_type == T38_DATA_V21)
                         {
-                            monitor_control_messages(s, TRUE, t->buffer, t->len - 2);
+                            monitor_control_messages(s, true, t->buffer, t->len - 2);
                             if (s->core.real_time_frame_handler)
-                                s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, TRUE, t->buffer, t->len - 2);
+                                s->core.real_time_frame_handler(s, s->core.real_time_frame_user_data, true, t->buffer, t->len - 2);
                             /*endif*/
                         }
                         else
@@ -2018,12 +2037,14 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
                             /* Make sure we go back to short training if CTC/CTR has kicked us into
                                long training. Any successful HDLC frame received at a rate other than
                                V.21 is an adequate indication we should change. */
-                            s->core.short_train = TRUE;
+                            s->core.short_train = true;
                         }
                         /*endif*/
                         /* It seems some boxes may not like us sending a _SIG_END here, and then another
                            when the carrier actually drops. Lets just send T38_FIELD_HDLC_FCS_OK here. */
-                        t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_FCS_OK, NULL, 0, category);
+                        if (t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_FCS_OK, NULL, 0, category) < 0)
+                            span_log(&s->logging, SPAN_LOG_WARNING, "T.38 send failed\n");
+                        /*endif*/
                     }
                     /*endif*/
                 }
@@ -2040,8 +2061,11 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
         {
             /* Check the flags are back-to-back when testing for valid preamble. This
                greatly reduces the chances of false preamble detection, and anything
-               which doesn't send them back-to-back is badly broken. */
-            if (t->num_bits != 7)
+               which doesn't send them back-to-back is badly broken. When we are one
+               flag away from OK we should not apply the back-to-back consition, as
+               between an abort and the following start of frame things might not be
+               octet aligned. */
+            if (t->flags_seen != t->framing_ok_threshold - 1  &&  t->num_bits != 7)
                 t->flags_seen = 0;
             /*endif*/
             if (++t->flags_seen >= t->framing_ok_threshold  &&  !t->framing_ok_announced)
@@ -2049,13 +2073,13 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
                 if (s->t38x.current_tx_data_type == T38_DATA_V21)
                 {
                     t38_core_send_indicator(&s->t38x.t38, set_slow_packetisation(s));
-                    s->audio.modems.rx_signal_present = TRUE;
+                    s->audio.modems.rx_signal_present = true;
                 }
                 /*endif*/
                 if (s->t38x.in_progress_rx_indicator == T38_IND_CNG)
                     set_next_tx_type(s);
                 /*endif*/
-                t->framing_ok_announced = TRUE;
+                t->framing_ok_announced = true;
             }
             /*endif*/
         }
@@ -2066,7 +2090,7 @@ static void rx_flag_or_abort(hdlc_rx_state_t *t)
     t->num_bits = 0;
     u->crc = 0xFFFF;
     u->data_ptr = 0;
-    s->t38x.corrupt_current_frame[1] = FALSE;
+    s->t38x.corrupt_current_frame[1] = false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -2083,16 +2107,28 @@ static void t38_hdlc_rx_put_bit(hdlc_rx_state_t *t, int new_bit)
     }
     /*endif*/
     t->raw_bit_stream = (t->raw_bit_stream << 1) | (new_bit & 1);
-    if ((t->raw_bit_stream & 0x3F) == 0x3E)
+    if ((t->raw_bit_stream & 0x3E) == 0x3E)
     {
-        /* Its time to either skip a bit, for stuffing, or process a flag or abort */
-        if ((t->raw_bit_stream & 0x40))
+        /* There are at least 5 ones in a row. We could be at a:
+            - point where stuffing occurs
+            - a flag
+            - an abort
+            - the result of bit errors */
+        /* Is this a bit to be skipped for destuffing? */
+        if ((t->raw_bit_stream & 0x41) == 0)
+            return;
+        /*endif*/
+        /* Is this a flag or abort? */
+        if ((t->raw_bit_stream & 0xFE) == 0x7E)
+        {
             rx_flag_or_abort(t);
-        return;
+            return;
+        }
+        /*endif*/
     }
     /*endif*/
     t->num_bits++;
-    if (!t->framing_ok_announced)
+    if (t->flags_seen < t->framing_ok_threshold)
         return;
     /*endif*/
     t->byte_in_progress = (t->byte_in_progress >> 1) | ((t->raw_bit_stream & 0x01) << 7);
@@ -2100,17 +2136,26 @@ static void t38_hdlc_rx_put_bit(hdlc_rx_state_t *t, int new_bit)
         return;
     /*endif*/
     t->num_bits = 0;
+    s = (t38_gateway_state_t *) t->frame_user_data;
+    u = &s->core.to_t38;
     if (t->len >= (int) sizeof(t->buffer))
     {
         /* This is too long. Abandon the frame, and wait for the next flag octet. */
+        if ((t->len + 2) >= u->octets_per_data_packet)
+        {
+            /* We will have sent some of this frame already, so we need to send termination of this bad HDLC frame. */
+            category = (s->t38x.current_tx_data_type == T38_DATA_V21)  ?  T38_PACKET_CATEGORY_CONTROL_DATA  :  T38_PACKET_CATEGORY_IMAGE_DATA;
+            if (t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_FCS_BAD, NULL, 0, category) < 0)
+                span_log(&s->logging, SPAN_LOG_WARNING, "T.38 send failed\n");
+            /*endif*/
+        }
+        /*endif*/
         t->rx_length_errors++;
         t->flags_seen = t->framing_ok_threshold - 1;
         t->len = 0;
         return;
     }
     /*endif*/
-    s = (t38_gateway_state_t *) t->frame_user_data;
-    u = &s->core.to_t38;
     t->buffer[t->len] = (uint8_t) t->byte_in_progress;
     if (t->len == 1)
     {
@@ -2119,7 +2164,7 @@ static void t38_hdlc_rx_put_bit(hdlc_rx_state_t *t, int new_bit)
         if (t->buffer[0] != 0xFF  ||  (t->buffer[1] & 0xEF) != 0x03)
         {
             /* Abandon the frame, and wait for the next flag octet. */
-            /* If this is a real frame where one of these first two octets has a bit
+            /* If this is a real frame, where one of these first two octets has a bit
                error, we will fail to forward the frame with a CRC error, as we do for
                other bad frames. This will affect the timing of what goes forward.
                Hopefully such timing changes will have less frequent bad effects than
@@ -2147,7 +2192,7 @@ static void t38_hdlc_rx_put_bit(hdlc_rx_state_t *t, int new_bit)
     }
     if (++u->data_ptr >= u->octets_per_data_packet)
     {
-        bit_reverse(u->data, t->buffer + t->len - 2 - u->data_ptr, u->data_ptr);
+        bit_reverse(u->data, &t->buffer[t->len - 2 - u->data_ptr], u->data_ptr);
         category = (s->t38x.current_tx_data_type == T38_DATA_V21)  ?  T38_PACKET_CATEGORY_CONTROL_DATA  :  T38_PACKET_CATEGORY_IMAGE_DATA;
         t38_core_send_data(&s->t38x.t38, s->t38x.current_tx_data_type, T38_FIELD_HDLC_DATA, u->data, u->data_ptr, category);
         /* Since we delay transmission by 2 octets, we should now have sent the last of the data octets when
@@ -2183,9 +2228,9 @@ static int restart_rx_modem(t38_gateway_state_t *s)
              s->core.ecm_mode);
 
     t = &s->audio.modems;
-    hdlc_rx_init(&t->hdlc_rx, FALSE, TRUE, HDLC_FRAMING_OK_THRESHOLD, NULL, s);
-    t->rx_signal_present = FALSE;
-    t->rx_trained = FALSE;
+    hdlc_rx_init(&t->hdlc_rx, false, true, HDLC_FRAMING_OK_THRESHOLD, NULL, s);
+    t->rx_signal_present = false;
+    t->rx_trained = false;
     /* Default to the transmit data being V.21, unless a faster modem pops up trained. */
     s->t38x.current_tx_data_type = T38_DATA_V21;
     fsk_rx_init(&t->v21_rx, &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, (put_bit_func_t) t38_hdlc_rx_put_bit, &t->hdlc_rx);
@@ -2212,13 +2257,13 @@ static int restart_rx_modem(t38_gateway_state_t *s)
     switch (s->core.fast_rx_modem)
     {
     case FAX_MODEM_V27TER_RX:
-        v27ter_rx_restart(&t->fast_modems.v27ter_rx, s->core.fast_bit_rate, FALSE);
+        v27ter_rx_restart(&t->fast_modems.v27ter_rx, s->core.fast_bit_rate, false);
         v27ter_rx_set_put_bit(&t->fast_modems.v27ter_rx, put_bit_func, put_bit_user_data);
         set_rx_handler(s, &v27ter_v21_rx, &v27ter_v21_rx_fillin, s);
         s->core.fast_rx_active = FAX_MODEM_V27TER_RX;
         break;
     case FAX_MODEM_V29_RX:
-        v29_rx_restart(&t->fast_modems.v29_rx, s->core.fast_bit_rate, FALSE);
+        v29_rx_restart(&t->fast_modems.v29_rx, s->core.fast_bit_rate, false);
         v29_rx_set_put_bit(&t->fast_modems.v29_rx, put_bit_func, put_bit_user_data);
         set_rx_handler(s, &v29_v21_rx, &v29_v21_rx_fillin, s);
         s->core.fast_rx_active = FAX_MODEM_V29_RX;
@@ -2249,15 +2294,15 @@ static void update_rx_timing(t38_gateway_state_t *s, int len)
             {
             case TIMED_MODE_TCF_PREDICTABLE_MODEM_START_PAST_V21_MODEM:
                 /* Timed announcement of training, 75ms after the DCS carrier fell. */
-                s->core.timed_mode = TIMED_MODE_TCF_PREDICTABLE_MODEM_START_FAST_MODEM_ANNOUNCED;
                 announce_training(s);
+                s->core.timed_mode = TIMED_MODE_TCF_PREDICTABLE_MODEM_START_FAST_MODEM_ANNOUNCED;
                 break;
             case TIMED_MODE_TCF_PREDICTABLE_MODEM_START_FAST_MODEM_SEEN:
                 /* Timed announcement of training, 75ms after the DCS carrier fell. */
+                announce_training(s);
                 /* Use a timeout to ride over TEP, if it is present */
                 s->core.samples_to_timeout = ms_to_samples(500);
                 s->core.timed_mode = TIMED_MODE_TCF_PREDICTABLE_MODEM_START_FAST_MODEM_ANNOUNCED;
-                announce_training(s);
                 break;
             case TIMED_MODE_TCF_PREDICTABLE_MODEM_START_FAST_MODEM_ANNOUNCED:
                 s->core.timed_mode = TIMED_MODE_IDLE;
@@ -2328,7 +2373,7 @@ SPAN_DECLARE_NONSTD(int) t38_gateway_tx(t38_gateway_state_t *s, int16_t amp[], i
     int len;
 #if defined(LOG_FAX_AUDIO)
     int required_len;
-    
+
     required_len = max_len;
 #endif
     if ((len = s->audio.modems.tx_handler(s->audio.modems.tx_user_data, amp, max_len)) < max_len)
@@ -2336,7 +2381,7 @@ SPAN_DECLARE_NONSTD(int) t38_gateway_tx(t38_gateway_state_t *s, int16_t amp[], i
         if (set_next_tx_type(s))
         {
             /* Give the new handler a chance to file the remaining buffer space */
-            len += s->audio.modems.tx_handler(s->audio.modems.tx_user_data, amp + len, max_len - len);
+            len += s->audio.modems.tx_handler(s->audio.modems.tx_user_data, &amp[len], max_len - len);
             if (len < max_len)
             {
                 silence_gen_set(&s->audio.modems.silence_gen, 0);
@@ -2350,15 +2395,15 @@ SPAN_DECLARE_NONSTD(int) t38_gateway_tx(t38_gateway_state_t *s, int16_t amp[], i
     if (s->audio.modems.transmit_on_idle)
     {
         /* Pad to the requested length with silence */
-        memset(amp + len, 0, (max_len - len)*sizeof(int16_t));
-        len = max_len;        
+        vec_zeroi16(&amp[len], max_len - len);
+        len = max_len;
     }
     /*endif*/
 #if defined(LOG_FAX_AUDIO)
     if (s->audio.modems.audio_tx_log >= 0)
     {
         if (len < required_len)
-            memset(amp + len, 0, (required_len - len)*sizeof(int16_t));
+            vec_zeroi16(&amp[len], required_len - len);
         /*endif*/
         write(s->audio.modems.audio_tx_log, amp, required_len*sizeof(int16_t));
     }
@@ -2449,7 +2494,7 @@ SPAN_DECLARE(void) t38_gateway_set_real_time_frame_handler(t38_gateway_state_t *
 static int t38_gateway_audio_init(t38_gateway_state_t *s)
 {
     fax_modems_init(&s->audio.modems,
-                    FALSE,
+                    false,
                     NULL,
                     hdlc_underflow_handler,
                     non_ecm_put_bit,
@@ -2458,7 +2503,7 @@ static int t38_gateway_audio_init(t38_gateway_state_t *s)
                     s);
     /* We need to use progressive HDLC transmit, and a special HDLC receiver, which is different
        from the other uses of FAX modems. */
-    hdlc_tx_init(&s->audio.modems.hdlc_tx, FALSE, 2, TRUE, hdlc_underflow_handler, s);
+    hdlc_tx_init(&s->audio.modems.hdlc_tx, false, 2, true, hdlc_underflow_handler, s);
     fsk_rx_set_put_bit(&s->audio.modems.v21_rx, (put_bit_func_t) t38_hdlc_rx_put_bit, &s->audio.modems.hdlc_rx);
     /* TODO: Don't use the very low cutoff levels we would like to. We get some quirks if we do.
        We need to sort this out. */
@@ -2500,7 +2545,7 @@ SPAN_DECLARE(t38_gateway_state_t *) t38_gateway_init(t38_gateway_state_t *s,
     /*endif*/
     if (s == NULL)
     {
-        if ((s = (t38_gateway_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (t38_gateway_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
         /*endif*/
     }
@@ -2511,15 +2556,15 @@ SPAN_DECLARE(t38_gateway_state_t *) t38_gateway_init(t38_gateway_state_t *s,
 
     t38_gateway_audio_init(s);
     t38_gateway_t38_init(s, tx_packet_handler, tx_packet_user_data);
-    
-    set_rx_active(s, TRUE);
+
+    set_rx_active(s, true);
     t38_gateway_set_supported_modems(s, T30_SUPPORT_V27TER | T30_SUPPORT_V29 | T30_SUPPORT_V17);
     t38_gateway_set_nsx_suppression(s, (const uint8_t *) "\x00\x00\x00", 3, (const uint8_t *) "\x00\x00\x00", 3);
 
     s->core.to_t38.octets_per_data_packet = 1;
-    s->core.ecm_allowed = TRUE;
+    s->core.ecm_allowed = true;
     //s->core.ms_per_tx_chunk = DEFAULT_MS_PER_TX_CHUNK;
-    t38_non_ecm_buffer_init(&s->core.non_ecm_to_modem, FALSE, 0);
+    t38_non_ecm_buffer_init(&s->core.non_ecm_to_modem, false, 0);
     restart_rx_modem(s);
     s->core.timed_mode = TIMED_MODE_STARTUP;
     s->core.samples_to_timeout = 1;
@@ -2565,7 +2610,7 @@ SPAN_DECLARE(int) t38_gateway_release(t38_gateway_state_t *s)
 
 SPAN_DECLARE(int) t38_gateway_free(t38_gateway_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

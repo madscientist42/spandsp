@@ -26,7 +26,7 @@
 #if !defined(_SPANDSP_PRIVATE_SUPER_TONE_RX_H_)
 #define _SPANDSP_PRIVATE_SUPER_TONE_RX_H_
 
-#define SUPER_TONE_BINS 128
+#define SUPER_TONE_BINS             128
 
 struct super_tone_rx_segment_s
 {

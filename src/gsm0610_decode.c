@@ -40,6 +40,11 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <stdlib.h>
 #include <memory.h>
@@ -66,7 +71,7 @@ static void postprocessing(gsm0610_state_t *s, int16_t amp[])
         tmp = gsm_mult_r(msr, 28180);
         /* De-emphasis */
         msr = saturated_add16(amp[k], tmp);
-        /* Truncation & upscaling */
+        /* Truncation and upscaling */
         amp[k] = (int16_t) (saturated_add16(msr, msr) & 0xFFF8);
     }
     /*endfor*/
@@ -105,7 +110,7 @@ SPAN_DECLARE(int) gsm0610_unpack_none(gsm0610_frame_t *s, const uint8_t c[])
     int i;
     int j;
     int k;
-    
+
     i = 0;
     for (j = 0;  j < 8;  j++)
         s->LARc[j] = c[i++];

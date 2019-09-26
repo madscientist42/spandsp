@@ -66,6 +66,7 @@ struct v29_tx_state_s
     /*! \brief The root raised cosine (RRC) pulse shaping filter buffer. */
     complexf_t rrc_filter[2*V29_TX_FILTER_STEPS];
 #endif
+
     /*! \brief Current offset into the RRC pulse shaping filter buffer. */
     int rrc_filter_step;
 
@@ -73,8 +74,8 @@ struct v29_tx_state_s
     uint32_t scramble_reg;
     /*! \brief The register for the training scrambler. */
     uint8_t training_scramble_reg;
-    /*! \brief TRUE if transmitting the training sequence, or shutting down transmission.
-               FALSE if transmitting user data. */
+    /*! \brief True if transmitting the training sequence, or shutting down transmission.
+               False if transmitting user data. */
     int in_training;
     /*! \brief A counter used to track progress through sending the training sequence. */
     int training_step;

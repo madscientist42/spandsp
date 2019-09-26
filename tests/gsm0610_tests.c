@@ -92,7 +92,7 @@ copied to etsitests/gsm0610/unpacked so the files are arranged in the following 
 ./fr_sync_A:
     Seqsync_A.inp
     Sync000_A.cod   --to--          Sync159_A.cod
-    
+
 ./fr_sync_L:
     Bitsync.inp
     Seqsync.inp
@@ -122,10 +122,6 @@ will be compressed to GSM 06.10 data, decompressed, and the resulting audio stor
 #include <string.h>
 #include <ctype.h>
 #include <sndfile.h>
-
-//#if defined(WITH_SPANDSP_INTERNALS)
-#define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 #include "spandsp-sim.h"
@@ -157,7 +153,7 @@ static int get_test_vector(int full, int disk, const char *name)
     int in;
     int len;
     int i;
-    
+
     if (full)
     {
         sprintf(buf, "%s%c/%s.inp", TESTDATA_DIR, 'L', name);
@@ -193,7 +189,7 @@ static int get_test_vector(int full, int disk, const char *name)
     {
         vector_len = len;
     }
-    
+
     sprintf(buf, "%s%c/%s.cod", TESTDATA_DIR, 'L', name);
     if ((in = open(buf, O_RDONLY)) < 0)
     {
@@ -225,9 +221,9 @@ static int get_law_test_vector(int full, int law, const char *name)
     int len;
     int i;
     int law_uc;
-    
+
     law_uc = toupper(law);
-    
+
     if (full)
     {
         sprintf(buf, "%s%c/%s-%c.inp", TESTDATA_DIR, law_uc, name, law_uc);
@@ -290,7 +286,7 @@ static int get_law_test_vector(int full, int law, const char *name)
     len /= sizeof(int16_t);
     for (i = 0;  i < len;  i++)
         decoder_code_vector[i] = code_vector_buf[i];
-    
+
     return len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -325,7 +321,7 @@ static int perform_linear_test(int full, int disk, const char *name)
                 mismatches++;
             }
         }
-        gsm0610_release(gsm0610_enc_state);
+        gsm0610_free(gsm0610_enc_state);
         if (mismatches)
         {
             printf("Test failed: %d of %d samples mismatch\n", mismatches, xxx);
@@ -354,7 +350,7 @@ static int perform_linear_test(int full, int disk, const char *name)
         printf("Test failed: %d of %d samples mismatch\n", mismatches, vector_len);
         exit(2);
     }
-    gsm0610_release(gsm0610_dec_state);
+    gsm0610_free(gsm0610_dec_state);
     printf("Test passed\n");
     return 0;
 }
@@ -372,7 +368,7 @@ static int perform_law_test(int full, int law, const char *name)
         printf("Performing A-law test '%s'\n", name);
     else
         printf("Performing u-law test '%s'\n", name);
-        
+
     get_law_test_vector(full, law, name);
 
     if (full)
@@ -409,7 +405,7 @@ static int perform_law_test(int full, int law, const char *name)
             exit(2);
         }
         printf("Test passed\n");
-        gsm0610_release(gsm0610_enc_state);
+        gsm0610_free(gsm0610_enc_state);
     }
 
     if ((gsm0610_dec_state = gsm0610_init(NULL, GSM0610_PACKING_NONE)) == NULL)
@@ -442,7 +438,7 @@ static int perform_law_test(int full, int law, const char *name)
         printf("Test failed: %d of %d samples mismatch\n", mismatches, vector_len);
         exit(2);
     }
-    gsm0610_release(gsm0610_dec_state);
+    gsm0610_free(gsm0610_dec_state);
     printf("Test passed\n");
     return 0;
 }
@@ -452,9 +448,9 @@ static int repack_gsm0610_voip_to_wav49(uint8_t c[], const uint8_t d[])
 {
     gsm0610_frame_t frame[2];
     int n;
- 
-	n = gsm0610_unpack_voip(&frame[0], d);
-	gsm0610_unpack_voip(&frame[1], d + n);
+
+    n = gsm0610_unpack_voip(&frame[0], d);
+    gsm0610_unpack_voip(&frame[1], d + n);
     n = gsm0610_pack_wav49(c, frame);
     return n;
 }
@@ -483,7 +479,7 @@ static int perform_pack_unpack_test(void)
     printf("Performing packing/unpacking tests (not part of the ETSI conformance tests).\n");
     /* Try trans-packing a lot of random data looking for before/after mismatch. */
     for (j = 0;  j < 1000;  j++)
-    {        
+    {
         for (i = 0;  i < 65;  i++)
             a[i] = rand();
         repack_gsm0610_wav49_to_voip(b, a);
@@ -516,21 +512,21 @@ static int perform_pack_unpack_test(void)
 
 static void etsi_compliance_tests(void)
 {
-    perform_linear_test(TRUE, 1, "Seq01");
-    perform_linear_test(TRUE, 1, "Seq02");
-    perform_linear_test(TRUE, 1, "Seq03");
-    perform_linear_test(TRUE, 1, "Seq04");
-    perform_linear_test(FALSE, 1, "Seq05");
-    perform_law_test(TRUE, 'a', "Seq01");
-    perform_law_test(TRUE, 'a', "Seq02");
-    perform_law_test(TRUE, 'a', "Seq03");
-    perform_law_test(TRUE, 'a', "Seq04");
-    perform_law_test(FALSE, 'a', "Seq05");
-    perform_law_test(TRUE, 'u', "Seq01");
-    perform_law_test(TRUE, 'u', "Seq02");
-    perform_law_test(TRUE, 'u', "Seq03");
-    perform_law_test(TRUE, 'u', "Seq04");
-    perform_law_test(FALSE, 'u', "Seq05");
+    perform_linear_test(true, 1, "Seq01");
+    perform_linear_test(true, 1, "Seq02");
+    perform_linear_test(true, 1, "Seq03");
+    perform_linear_test(true, 1, "Seq04");
+    perform_linear_test(false, 1, "Seq05");
+    perform_law_test(true, 'a', "Seq01");
+    perform_law_test(true, 'a', "Seq02");
+    perform_law_test(true, 'a', "Seq03");
+    perform_law_test(true, 'a', "Seq04");
+    perform_law_test(false, 'a', "Seq05");
+    perform_law_test(true, 'u', "Seq01");
+    perform_law_test(true, 'u', "Seq02");
+    perform_law_test(true, 'u', "Seq03");
+    perform_law_test(true, 'u', "Seq04");
+    perform_law_test(false, 'u', "Seq05");
     /* This is not actually an ETSI test */
     perform_pack_unpack_test();
 
@@ -553,14 +549,14 @@ int main(int argc, char *argv[])
     int etsitests;
     int packing;
 
-    etsitests = TRUE;
+    etsitests = true;
     packing = GSM0610_PACKING_NONE;
     while ((opt = getopt(argc, argv, "lp:")) != -1)
     {
         switch (opt)
         {
         case 'l':
-            etsitests = FALSE;
+            etsitests = false;
             break;
         case 'p':
             packing = atoi(optarg);
@@ -587,13 +583,13 @@ int main(int argc, char *argv[])
             fprintf(stderr, "    Cannot create audio file '%s'\n", OUT_FILE_NAME);
             exit(2);
         }
-    
+
         if ((gsm0610_enc_state = gsm0610_init(NULL, packing)) == NULL)
         {
             fprintf(stderr, "    Cannot create encoder\n");
             exit(2);
         }
-            
+
         if ((gsm0610_dec_state = gsm0610_init(NULL, packing)) == NULL)
         {
             fprintf(stderr, "    Cannot create decoder\n");
@@ -606,7 +602,7 @@ int main(int argc, char *argv[])
             gsm0610_decode(gsm0610_dec_state, post_amp, gsm0610_data, bytes);
             sf_writef_short(outhandle, post_amp, frames);
         }
-    
+
         if (sf_close_telephony(inhandle))
         {
             fprintf(stderr, "    Cannot close audio file '%s'\n", IN_FILE_NAME);
@@ -617,8 +613,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "    Cannot close audio file '%s'\n", OUT_FILE_NAME);
             exit(2);
         }
-        gsm0610_release(gsm0610_enc_state);
-        gsm0610_release(gsm0610_dec_state);
+        gsm0610_free(gsm0610_enc_state);
+        gsm0610_free(gsm0610_dec_state);
     }
     return 0;
 }

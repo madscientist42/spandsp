@@ -41,10 +41,15 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
-#include "spandsp/dc_restore.h"
+#include "spandsp/alloc.h"
 #include "spandsp/lpc10.h"
 #include "spandsp/private/lpc10.h"
 
@@ -112,11 +117,10 @@ static int encode(lpc10_encode_state_t *s,
     };
     static const int32_t entau[60] =
     {
-        19, 11, 27, 25, 29, 21, 23, 22, 30, 14, 15,  7, 39, 38, 46, 
-        42, 43, 41, 45, 37, 53, 49, 51, 50, 54, 52, 60, 56, 58, 26,
-        90, 88, 92, 84, 86, 82, 83, 81, 85, 69, 77, 73, 75, 74, 78,
-        70, 71, 67, 99, 97, 113, 112, 114, 98, 106, 104, 108, 100,
-        101, 76
+        19,  11,  27,  25,  29,  21,  23,  22,  30,  14,  15,   7,  39,  38,  46,
+        42,  43,  41,  45,  37,  53,  49,  51,  50,  54,  52,  60,  56,  58,  26,
+        90,  88,  92,  84,  86,  82,  83,  81,  85,  69,  77,  73,  75,  74,  78,
+        70,  71,  67,  99,  97, 113, 112, 114,  98, 106, 104, 108, 100, 101,  76
     };
     static const int32_t enadd[8] =
     {
@@ -138,14 +142,14 @@ static int encode(lpc10_encode_state_t *s,
     };
     static const int32_t rmst[64] =
     {
-        1024, 936, 856, 784, 718, 656, 600, 550, 502,
-        460, 420, 384, 352, 328, 294, 270, 246, 226,
-        206, 188, 172, 158, 144, 132, 120, 110, 102, 
-        92, 84, 78, 70, 64, 60, 54, 50,
-        46, 42, 38, 34, 32, 30, 26, 24,
-        22, 20, 18, 17, 16, 15, 14, 13,
-        12, 11, 10, 9, 8, 7, 6, 5, 4,
-        3, 2, 1, 0
+        1024, 936, 856, 784, 718, 656, 600, 550,
+         502, 460, 420, 384, 352, 328, 294, 270,
+         246, 226, 206, 188, 172, 158, 144, 132,
+         120, 110, 102,  92,  84,  78,  70,  64,
+          60,  54,  50,  46,  42,  38,  34,  32,
+          30,  26,  24,  22,  20,  18,  17,  16,
+          15,  14,  13,  12,  11,  10,   9,   8,
+           7,   6,   5,   4,   3,   2,   1,   0
     };
 
     int32_t idel;
@@ -271,7 +275,7 @@ SPAN_DECLARE(lpc10_encode_state_t *) lpc10_encode_init(lpc10_encode_state_t *s, 
 
     if (s == NULL)
     {
-        if ((s = (lpc10_encode_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (lpc10_encode_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
     }
 
@@ -282,7 +286,7 @@ SPAN_DECLARE(lpc10_encode_state_t *) lpc10_encode_init(lpc10_encode_state_t *s, 
     s->z21 = 0.0f;
     s->z12 = 0.0f;
     s->z22 = 0.0f;
-    
+
     /* State used by function lpc10_analyse */
     for (i = 0;  i < 540;  i++)
     {
@@ -323,7 +327,7 @@ SPAN_DECLARE(lpc10_encode_state_t *) lpc10_encode_init(lpc10_encode_state_t *s, 
     s->l2sum1 = 0.0f;
     s->l2ptr1 = 1;
     s->l2ptr2 = 9;
-    s->hyst = FALSE;
+    s->hyst = false;
 
     /* State used by function lpc10_voicing */
     s->dither = 20.0f;
@@ -356,7 +360,7 @@ SPAN_DECLARE(lpc10_encode_state_t *) lpc10_encode_init(lpc10_encode_state_t *s, 
 
     /* State used by function lpc10_pack */
     s->isync = 0;
-    
+
     return s;
 }
 /*- End of function --------------------------------------------------------*/
@@ -369,7 +373,7 @@ SPAN_DECLARE(int) lpc10_encode_release(lpc10_encode_state_t *s)
 
 SPAN_DECLARE(int) lpc10_encode_free(lpc10_encode_state_t *s)
 {
-    free(s);
+    span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

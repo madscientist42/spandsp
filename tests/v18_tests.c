@@ -48,14 +48,11 @@
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
-#define FALSE 0
-#define TRUE (!FALSE)
-
 #define OUTPUT_FILE_NAME    "v18.wav"
 
 #define SAMPLES_PER_CHUNK   160
 
-int log_audio = FALSE;
+int log_audio = false;
 SNDFILE *outhandle = NULL;
 
 char *decode_test_file = NULL;
@@ -79,7 +76,7 @@ static void put_text_msg(void *user_data, const uint8_t *msg, int len)
     }
     else
     {
-        good_message_received = TRUE;
+        good_message_received = true;
     }
 }
 /*- End of function --------------------------------------------------------*/
@@ -96,17 +93,17 @@ static void basic_tests(int mode)
     logging_state_t *logging;
 
     printf("Testing %s\n", v18_mode_to_str(mode));
-    v18_a = v18_init(NULL, TRUE, mode, put_text_msg, NULL);
+    v18_a = v18_init(NULL, true, mode, put_text_msg, NULL);
     logging = v18_get_logging_state(v18_a);
     span_log_set_level(logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
     span_log_set_tag(logging, "A");
-    v18_b = v18_init(NULL, FALSE, mode, put_text_msg, NULL);
+    v18_b = v18_init(NULL, false, mode, put_text_msg, NULL);
     logging = v18_get_logging_state(v18_b);
     span_log_set_level(logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
     span_log_set_tag(logging, "B");
 
     /* Fake an OK condition for the first message test */
-    good_message_received = TRUE;
+    good_message_received = true;
     push = 0;
     if (v18_put(v18_a, qbf_tx, -1) != strlen(qbf_tx))
     {
@@ -131,7 +128,7 @@ static void basic_tests(int mode)
                     printf("No message received\n");
                     exit(2);
                 }
-                good_message_received = FALSE;
+                good_message_received = false;
                 if (v18_put(v18_a, qbf_tx, -1) != strlen(qbf_tx))
                 {
                     printf("V.18 put failed\n");
@@ -1576,7 +1573,7 @@ static int test_x_04(void)
                         assumed that the character conversion is the same for Baudot at 50 bit/s and any
                         other supported speed.
      */
-    v18_state = v18_init(NULL, TRUE, V18_MODE_5BIT_45, NULL, NULL);
+    v18_state = v18_init(NULL, true, V18_MODE_5BIT_45, NULL, NULL);
     logging = v18_get_logging_state(v18_state);
     span_log_set_level(logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
     span_log_set_tag(logging, "");
@@ -1655,7 +1652,7 @@ static int test_x_06(void)
         msg[i] = i + 1;
     msg[127] = '\0';
     printf("%s\n", msg);
-    
+
     v18_encode_dtmf(NULL, dtmf, msg);
     printf("%s\n", dtmf);
 
@@ -1797,7 +1794,7 @@ static int test_x_12(void)
 static void put_v18_msg(void *user_data, const uint8_t *msg, int len)
 {
     char buf[1024];
-    
+
     memcpy(buf, msg, len);
     buf[len] = '\0';
     printf("Received (%d bytes) '%s'\n", len, buf);
@@ -1819,7 +1816,7 @@ static int decode_test_data_file(int mode, const char *filename)
         fprintf(stderr, "    Cannot open audio file '%s'\n", decode_test_file);
         exit(2);
     }
-    v18_state = v18_init(NULL, FALSE, mode, put_v18_msg, NULL);
+    v18_state = v18_init(NULL, false, mode, put_v18_msg, NULL);
     logging = v18_get_logging_state(v18_state);
     span_log_set_level(logging, SPAN_LOG_SHOW_SEVERITY | SPAN_LOG_SHOW_PROTOCOL | SPAN_LOG_FLOW);
     span_log_set_tag(logging, "");
@@ -1960,7 +1957,7 @@ int main(int argc, char *argv[])
             decode_test_file = optarg;
             break;
         case 'l':
-            log_audio = TRUE;
+            log_audio = true;
             break;
         case 's':
             test_standard = atoi(optarg);
@@ -1991,7 +1988,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    hit = FALSE;
+    hit = false;
     for (i = 0;  test_list[i].title[0];  i++)
     {
         if (test_list[i].func
@@ -2002,7 +1999,7 @@ int main(int argc, char *argv[])
                     &&
                     test_list[i].title[strlen(match)] == ' ')))
         {
-            hit = TRUE;
+            hit = true;
             printf("%s\n", test_list[i].title);
             res = test_list[i].func();
             if (res < 0)

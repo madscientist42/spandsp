@@ -195,7 +195,7 @@ extern "C"
     {
         return (long int) (x);
     }
-#elif defined(__ppc__)  ||   defined(__powerpc__)
+#elif (defined(__ppc__)  ||  defined(__powerpc__))  &&  !defined(__NO_FPRS__)
     static __inline__ long int lfastrint(register double x)
     {
         int res[2];
@@ -247,6 +247,7 @@ extern "C"
      *    Therefore implement inline versions of these functions here.
      */
 
+#if (_MSC_VER < 1800)
     __inline long int lrint(double x)
     {
         long int i;
@@ -273,20 +274,22 @@ extern "C"
 
     __inline float rintf(float flt)
     {
-    	_asm
-    	{	fld flt
-    		frndint
-    	}
+        _asm
+        {
+            fld flt
+            frndint
+        }
     }
 
     __inline double rint(double dbl)
     {
-        _asm 
-    	{
+        _asm
+        {
             fld dbl
             frndint
         }
     }
+#endif
 
     __inline long int lfastrint(double x)
     {
@@ -316,15 +319,17 @@ extern "C"
     /* x86_64 machines will do best with a simple assignment. */
 #include <intrin.h>
 
+#if (_MSC_VER < 1800)
     __inline long int lrint(double x)
     {
-		return (long int)_mm_cvtsd_si64x( _mm_loadu_pd ((const double*)&x) );
+        return (long int)_mm_cvtsd_si64x(_mm_loadu_pd((const double *) &x));
     }
 
     __inline long int lrintf(float x)
     {
-		return _mm_cvt_ss2si( _mm_load_ss((const float*)&x) );
+        return _mm_cvt_ss2si(_mm_load_ss((const float *) &x));
     }
+#endif
 
     __inline long int lfastrint(double x)
     {

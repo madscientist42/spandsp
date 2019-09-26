@@ -1,11 +1,11 @@
 /*
  * SpanDSP - a series of DSP components for telephony
  *
- * fax_tests.c
+ * fax_tests.c - Tests for the audio and T.38 FAX modules.
  *
  * Written by Steve Underwood <steveu@coppice.org>
  *
- * Copyright (C) 2003 Steve Underwood
+ * Copyright (C) 2005, 2006, 2009, 2010 Steve Underwood
  *
  * All rights reserved.
  *
@@ -23,6 +23,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+/*! \file */
+
 /*! \page fax_tests_page FAX tests
 \section fax_tests_page_sec_1 What does it do?
 \section fax_tests_page_sec_2 How does it work?
@@ -32,21 +34,44 @@
 #include "config.h"
 #endif
 
+#if defined(HAVE_FL_FL_H)  &&  defined(HAVE_FL_FL_CARTESIAN_H)  &&  defined(HAVE_FL_FL_AUDIO_METER_H)
+#define ENABLE_GUI
+#endif
+
 #include <stdlib.h>
+#include <inttypes.h>
 #include <stdio.h>
-#include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 #include <sndfile.h>
+#if !defined(_WIN32)
+#include <unistd.h>
+#endif
 
-//#if defined(WITH_SPANDSP_INTERNALS)
+#if defined(HAVE_LIBXML_XMLMEMORY_H)
+#include <libxml/xmlmemory.h>
+#endif
+#if defined(HAVE_LIBXML_PARSER_H)
+#include <libxml/parser.h>
+#endif
+#if defined(HAVE_LIBXML_XINCLUDE_H)
+#include <libxml/xinclude.h>
+#endif
+
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
+#include "udptl.h"
 #include "spandsp.h"
 #include "spandsp-sim.h"
 
+#if defined(ENABLE_GUI)
+#include "media_monitor.h"
+#endif
+#include "fax_tester.h"
 #include "fax_utils.h"
+#include "pcap_parse.h"
 
 #define SAMPLES_PER_CHUNK       160
 
@@ -70,8 +95,8 @@ struct machine_s
     int total_audio_time;
 } machines[FAX_MACHINES];
 
-int use_receiver_not_ready = FALSE;
-int test_local_interrupt = FALSE;
+int use_receiver_not_ready = false;
+int test_local_interrupt = false;
 int t30_state_to_wreck = -1;
 
 static int phase_b_handler(t30_state_t *s, void *user_data, int result)
@@ -107,7 +132,7 @@ static int phase_d_handler(t30_state_t *s, void *user_data, int result)
         if (i == 0)
         {
             printf("%d: Initiating interrupt request\n", i);
-            t30_local_interrupt_request(s, TRUE);
+            t30_local_interrupt_request(s, true);
         }
         else
         {
@@ -118,7 +143,7 @@ static int phase_d_handler(t30_state_t *s, void *user_data, int result)
             case T30_PRI_EOM:
             case T30_PRI_EOP:
                 printf("%d: Accepting interrupt request\n", i);
-                t30_local_interrupt_request(s, TRUE);
+                t30_local_interrupt_request(s, true);
                 break;
             case T30_PIN:
                 break;
@@ -137,13 +162,13 @@ static void phase_e_handler(t30_state_t *s, void *user_data, int result)
 
     i = (intptr_t) user_data;
     snprintf(tag, sizeof(tag), "%c: Phase E", i);
-    printf("%c: Phase E handler on channel %c - (%d) %s\n", i, i, result, t30_completion_code_to_str(result));    
+    printf("%c: Phase E handler on channel %c - (%d) %s\n", i, i, result, t30_completion_code_to_str(result));
     fax_log_final_transfer_statistics(s, tag);
     fax_log_tx_parameters(s, tag);
     fax_log_rx_parameters(s, tag);
     t30_get_transfer_statistics(s, &t);
     machines[i - 'A'].succeeded = (result == T30_ERR_OK)  &&  (t.pages_tx == 12  ||  t.pages_rx == 12);
-    machines[i - 'A'].done = TRUE;
+    machines[i - 'A'].done = true;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -154,7 +179,7 @@ static void real_time_frame_handler(t30_state_t *s,
                                     int len)
 {
     int i;
-    
+
     i = (intptr_t) user_data;
     printf("%c: Real time frame handler on channel %c - %s, %s, length = %d\n",
            i,
@@ -168,10 +193,10 @@ static void real_time_frame_handler(t30_state_t *s,
 static int document_handler(t30_state_t *s, void *user_data, int event)
 {
     int i;
-    
+
     i = (intptr_t) user_data;
     printf("%c: Document handler on channel %c - event %d\n", i, i, event);
-    return FALSE;
+    return false;
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -212,20 +237,20 @@ int main(int argc, char *argv[])
     t30_state_t *t30;
     logging_state_t *logging;
 
-    log_audio = FALSE;
+    log_audio = false;
     input_tiff_file_name = INPUT_TIFF_FILE_NAME;
     input_audio_file_name = NULL;
-    use_ecm = FALSE;
+    use_ecm = false;
 #if defined(WITH_SPANDSP_INTERNALS)
-    use_line_hits = FALSE;
+    use_line_hits = false;
 #endif
-    use_tep = FALSE;
-    polled_mode = FALSE;
+    use_tep = false;
+    polled_mode = false;
     page_header_info = NULL;
-    reverse_flow = FALSE;
-    use_transmit_on_idle = TRUE;
-    use_receiver_not_ready = FALSE;
-    use_page_limits = FALSE;
+    reverse_flow = false;
+    use_transmit_on_idle = true;
+    use_receiver_not_ready = false;
+    use_page_limits = false;
     signal_level = 0;
     noise_level = -99;
     scan_line_time = 0;
@@ -235,11 +260,11 @@ int main(int argc, char *argv[])
         switch (opt)
         {
         case 'e':
-            use_ecm = TRUE;
+            use_ecm = true;
             break;
 #if defined(WITH_SPANDSP_INTERNALS)
         case 'h':
-            use_line_hits = TRUE;
+            use_line_hits = true;
             break;
 #endif
         case 'H':
@@ -252,7 +277,7 @@ int main(int argc, char *argv[])
             input_audio_file_name = optarg;
             break;
         case 'l':
-            log_audio = TRUE;
+            log_audio = true;
             break;
         case 'm':
             supported_modems = atoi(optarg);
@@ -261,13 +286,13 @@ int main(int argc, char *argv[])
             noise_level = atoi(optarg);
             break;
         case 'p':
-            polled_mode = TRUE;
+            polled_mode = true;
             break;
         case 'r':
-            reverse_flow = TRUE;
+            reverse_flow = true;
             break;
         case 'R':
-            use_receiver_not_ready = TRUE;
+            use_receiver_not_ready = true;
             break;
         case 's':
             signal_level = atoi(optarg);
@@ -276,10 +301,10 @@ int main(int argc, char *argv[])
             scan_line_time = atoi(optarg);
             break;
         case 't':
-            use_tep = TRUE;
+            use_tep = true;
             break;
         case 'T':
-            use_page_limits = TRUE;
+            use_page_limits = true;
             break;
         case 'w':
             t30_state_to_wreck = atoi(optarg);
@@ -320,9 +345,9 @@ int main(int argc, char *argv[])
         i = mc->chan + 1;
         sprintf(buf, "%d%d%d%d%d%d%d%d", i, i, i, i, i, i, i, i);
         if (reverse_flow)
-            mc->fax = fax_init(NULL, (mc->chan & 1)  ?  TRUE  :  FALSE);
+            mc->fax = fax_init(NULL, (mc->chan & 1)  ?  true  :  false);
         else
-            mc->fax = fax_init(NULL, (mc->chan & 1)  ?  FALSE  :  TRUE);
+            mc->fax = fax_init(NULL, (mc->chan & 1)  ?  false  :  true);
         mc->awgn = NULL;
         signal_scaling = 1.0f;
         if (noise_level > -99)
@@ -435,12 +460,12 @@ int main(int argc, char *argv[])
 
         memset(mc->amp, 0, sizeof(mc->amp));
         mc->total_audio_time = 0;
-        mc->done = FALSE;
+        mc->done = false;
     }
     time(&start_time);
     for (;;)
     {
-        alldone = TRUE;
+        alldone = true;
         for (j = 0;  j < FAX_MACHINES;  j++)
         {
             mc = &machines[j];
@@ -499,7 +524,7 @@ int main(int argc, char *argv[])
                         for (k = 0;  k < 5;  k++)
                             mc->amp[k] = 0;
                     }
-                }    
+                }
             }
             if (t30->state == t30_state_to_wreck)
                 memset(machines[j ^ 1].amp, 0, sizeof(int16_t)*SAMPLES_PER_CHUNK);
@@ -507,7 +532,7 @@ int main(int argc, char *argv[])
             if (fax_rx(mc->fax, machines[j ^ 1].amp, SAMPLES_PER_CHUNK))
                 break;
             if (!mc->done)
-                alldone = FALSE;
+                alldone = false;
         }
 
         if (log_audio)
@@ -543,7 +568,7 @@ int main(int argc, char *argv[])
         }
     }
     printf("Total audio time = %ds (wall time %ds)\n", machines[0].total_audio_time/8000, (int) (end_time - start_time));
-    return  0;
+    return 0;
 }
 /*- End of function --------------------------------------------------------*/
 /*- End of file ------------------------------------------------------------*/

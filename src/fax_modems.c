@@ -39,6 +39,11 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <assert.h>
 #include <fcntl.h>
@@ -48,6 +53,7 @@
 #endif
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/logging.h"
 #include "spandsp/bit_operations.h"
 #include "spandsp/dc_restore.h"
@@ -73,6 +79,7 @@
 
 #include "spandsp/private/logging.h"
 #include "spandsp/private/silence_gen.h"
+#include "spandsp/private/power_meter.h"
 #include "spandsp/private/fsk.h"
 #include "spandsp/private/v17tx.h"
 #include "spandsp/private/v17rx.h"
@@ -136,6 +143,7 @@ SPAN_DECLARE_NONSTD(void) fax_modems_hdlc_tx_frame(void *user_data, const uint8_
         hdlc_tx_restart(&s->hdlc_tx);
     else
         hdlc_tx_frame(&s->hdlc_tx, msg, len);
+    /*endif*/
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -177,8 +185,7 @@ SPAN_DECLARE_NONSTD(int) fax_modems_v17_v21_rx(void *user_data, const int16_t am
     fsk_rx(&s->v21_rx, amp, len);
     if (s->rx_frame_received)
     {
-        /* We have received something, and the fast modem has not trained. We must
-           be receiving valid V.21 */
+        /* We have received something, and the fast modem has not trained. We must be receiving valid V.21 */
         span_log(&s->logging, SPAN_LOG_FLOW, "Switching from V.17 + V.21 to V.21 (%.2fdBm0)\n", fsk_rx_signal_power(&s->v21_rx));
         fax_modems_set_rx_handler(s, (span_rx_handler_t *) &fsk_rx, &s->v21_rx, (span_rx_fillin_handler_t *) &fsk_rx_fillin, &s->v21_rx);
     }
@@ -223,8 +230,7 @@ SPAN_DECLARE_NONSTD(int) fax_modems_v27ter_v21_rx(void *user_data, const int16_t
     fsk_rx(&s->v21_rx, amp, len);
     if (s->rx_frame_received)
     {
-        /* We have received something, and the fast modem has not trained. We must
-           be receiving valid V.21 */
+        /* We have received something, and the fast modem has not trained. We must be receiving valid V.21 */
         span_log(&s->logging, SPAN_LOG_FLOW, "Switching from V.27ter + V.21 to V.21 (%.2fdBm0)\n", fsk_rx_signal_power(&s->v21_rx));
         fax_modems_set_rx_handler(s, (span_rx_handler_t *) &fsk_rx, &s->v21_rx, (span_rx_fillin_handler_t *) &fsk_rx_fillin, &s->v21_rx);
     }
@@ -269,8 +275,7 @@ SPAN_DECLARE_NONSTD(int) fax_modems_v29_v21_rx(void *user_data, const int16_t am
     fsk_rx(&s->v21_rx, amp, len);
     if (s->rx_frame_received)
     {
-        /* We have received something, and the fast modem has not trained. We must
-           be receiving valid V.21 */
+        /* We have received something, and the fast modem has not trained. We must be receiving valid V.21 */
         span_log(&s->logging, SPAN_LOG_FLOW, "Switching from V.29 + V.21 to V.21 (%.2fdBm0)\n", fsk_rx_signal_power(&s->v21_rx));
         fax_modems_set_rx_handler(s, (span_rx_handler_t *) &fsk_rx, &s->v21_rx, (span_rx_fillin_handler_t *) &fsk_rx_fillin, &s->v21_rx);
     }
@@ -328,6 +333,7 @@ SPAN_DECLARE(logging_state_t *) fax_modems_get_logging_state(fax_modems_state_t 
 
 SPAN_DECLARE(int) fax_modems_restart(fax_modems_state_t *s)
 {
+    s->current_tx_type = -1;
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -343,8 +349,9 @@ SPAN_DECLARE(fax_modems_state_t *) fax_modems_init(fax_modems_state_t *s,
 {
     if (s == NULL)
     {
-        if ((s = (fax_modems_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (fax_modems_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
+        /*endif*/
     }
     /*endif*/
     memset(s, 0, sizeof(*s));
@@ -364,8 +371,8 @@ SPAN_DECLARE(fax_modems_state_t *) fax_modems_init(fax_modems_state_t *s,
 
     dc_restore_init(&s->dc_restore);
 
-    hdlc_rx_init(&s->hdlc_rx, FALSE, FALSE, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, user_data);
-    hdlc_tx_init(&s->hdlc_tx, FALSE, 2, FALSE, hdlc_tx_underflow, user_data);
+    hdlc_rx_init(&s->hdlc_rx, false, false, HDLC_FRAMING_OK_THRESHOLD, hdlc_accept, user_data);
+    hdlc_tx_init(&s->hdlc_tx, false, 2, false, hdlc_tx_underflow, user_data);
 
     fsk_rx_init(&s->v21_rx, &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, (put_bit_func_t) hdlc_rx_put_bit, &s->hdlc_rx);
     fsk_rx_signal_cutoff(&s->v21_rx, -39.09f);
@@ -381,7 +388,7 @@ SPAN_DECLARE(fax_modems_state_t *) fax_modems_init(fax_modems_state_t *s,
 
     silence_gen_init(&s->silence_gen, 0);
 
-    s->rx_signal_present = FALSE;
+    s->rx_signal_present = false;
     s->rx_handler = (span_rx_handler_t *) &span_dummy_rx;
     s->rx_fillin_handler = (span_rx_fillin_handler_t *) &span_dummy_rx;
     s->rx_user_data = NULL;
@@ -400,7 +407,7 @@ SPAN_DECLARE(int) fax_modems_release(fax_modems_state_t *s)
 SPAN_DECLARE(int) fax_modems_free(fax_modems_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     /*endif*/
     return 0;
 }

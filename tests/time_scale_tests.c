@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     int opt;
 
     rate = 1.8f;
-    sweep_rate = FALSE;
+    sweep_rate = false;
     in_file_name = IN_FILE_NAME;
     while ((opt = getopt(argc, argv, "i:r:s")) != -1)
     {
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
             rate = atof(optarg);
             break;
         case 's':
-            sweep_rate = TRUE;
+            sweep_rate = true;
             break;
         default:
             //usage();

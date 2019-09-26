@@ -22,6 +22,7 @@ AM_LDFLAGS = $(COMP_VENDOR_LDFLAGS)
 MAINTAINERCLEANFILES = Makefile.in
 
 DISTCLEANFILES = $(srcdir)/at_interpreter_dictionary.h \
+                 $(srcdir)/cielab_luts.h \
                  $(srcdir)/math_fixed_tables.h \
                  $(srcdir)/v17_v32bis_rx_fixed_rrc.h \
                  $(srcdir)/v17_v32bis_rx_floating_rrc.h \
@@ -56,6 +57,7 @@ EXTRA_DIST = floating_fudge.h \
              libtiff.2008.vcproj \
              filter_tools.c \
              make_at_dictionary.c \
+             make_cielab_luts.c \
              make_math_fixed_tables.c \
              make_modem_filter.c \
              msvc/config.h \
@@ -89,6 +91,7 @@ lib_LTLIBRARIES = libspandsp.la
 
 libspandsp_la_SOURCES = ademco_contactid.c \
                         adsi.c \
+                        alloc.c \
                         async.c \
                         at_interpreter.c \
                         awgn.c \
@@ -176,6 +179,7 @@ libspandsp_la_LDFLAGS = -version-info @SPANDSP_LT_CURRENT@:@SPANDSP_LT_REVISION@
 
 nobase_include_HEADERS = spandsp/ademco_contactid.h \
                          spandsp/adsi.h \
+                         spandsp/alloc.h \
                          spandsp/async.h \
                          spandsp/arctan2.h \
                          spandsp/at_interpreter.h \
@@ -286,6 +290,9 @@ nobase_include_HEADERS = spandsp/ademco_contactid.h \
                          spandsp/private/modem_echo.h \
                          spandsp/private/noise.h \
                          spandsp/private/oki_adpcm.h \
+                         spandsp/private/playout.h \
+                         spandsp/private/plc.h \
+                         spandsp/private/power_meter.h \
                          spandsp/private/queue.h \
                          spandsp/private/schedule.h \
                          spandsp/private/sig_tone.h \
@@ -338,6 +345,9 @@ noinst_HEADERS = cielab_luts.h \
 make_at_dictionary$(EXEEXT): $(top_srcdir)/src/make_at_dictionary.c
 	$(CC_FOR_BUILD) -o make_at_dictionary$(EXEEXT) $(top_srcdir)/src/make_at_dictionary.c  -DHAVE_CONFIG_H -I$(top_builddir)/src
 
+make_cielab_luts$(EXEEXT): $(top_srcdir)/src/make_cielab_luts.c
+	$(CC_FOR_BUILD) -o make_cielab_luts$(EXEEXT) $(top_srcdir)/src/make_cielab_luts.c -DHAVE_CONFIG_H -I$(top_builddir)/src -lm
+
 make_math_fixed_tables$(EXEEXT): $(top_srcdir)/src/make_math_fixed_tables.c
 	$(CC_FOR_BUILD) -o make_math_fixed_tables$(EXEEXT) $(top_srcdir)/src/make_math_fixed_tables.c  -DHAVE_CONFIG_H -I$(top_builddir)/src -lm
 
@@ -364,6 +374,9 @@ math_fixed_tables.h: make_math_fixed_tables$(EXEEXT)
 t4_rx.$(OBJEXT): spandsp/version.h
 
 t4_rx.lo: spandsp/version.h
+
+cielab_luts.h: make_cielab_luts$(EXEEXT)
+	./make_cielab_luts$(EXEEXT) >cielab_luts.h
 
 V17_V32BIS_RX_INCL = v17_v32bis_rx_fixed_rrc.h \
                      v17_v32bis_rx_floating_rrc.h

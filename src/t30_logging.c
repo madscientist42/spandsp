@@ -41,6 +41,11 @@
 #if defined(HAVE_MATH_H)
 #include <math.h>
 #endif
+#if defined(HAVE_STDBOOL_H)
+#include <stdbool.h>
+#else
+#include "spandsp/stdbool.h"
+#endif
 #include "floating_fudge.h"
 #include <tiffio.h>
 
@@ -234,6 +239,37 @@ SPAN_DECLARE(const char *) t30_completion_code_to_str(int result)
     case T30_ERR_CSA_UNACCEPTABLE:
         return "Called subscriber internet address not accepted";
     }
+    /*endswitch*/
+    return "???";
+}
+/*- End of function --------------------------------------------------------*/
+
+SPAN_DECLARE(const char *) t30_modem_to_str(int modem)
+{
+    switch (modem)
+    {
+    case T30_MODEM_NONE:
+        return "None";
+    case T30_MODEM_PAUSE:
+        return "Pause";
+    case T30_MODEM_CED:
+        return "CED";
+    case T30_MODEM_CNG:
+        return "CNG";
+    case T30_MODEM_V21:
+        return "V.21";
+    case T30_MODEM_V27TER:
+        return "V.27ter";
+    case T30_MODEM_V29:
+        return "V.29";
+    case T30_MODEM_V17:
+        return "V.17";
+    case T30_MODEM_V34HDX:
+        return "V.34HDX";
+    case T30_MODEM_DONE:
+        return "Done";
+    }
+    /*endswitch*/
     return "???";
 }
 /*- End of function --------------------------------------------------------*/
@@ -400,9 +436,12 @@ SPAN_DECLARE(const char *) t30_frametype(uint8_t x)
         return "NULL";
     case T4_FCD:
         return "FCD";
+    case T4_CCD:
+        return "CCD";
     case T4_RCP:
         return "RCP";
     }
+    /*endswitch*/
     return "???";
 }
 /*- End of function --------------------------------------------------------*/
@@ -415,7 +454,7 @@ static void octet_reserved_bit(logging_state_t *log,
     char s[10] = ".... ....";
     int bit;
     uint8_t octet;
-    
+
     /* Break out the octet and the bit number within it. */
     octet = msg[((bit_no - 1) >> 3) + 3];
     bit_no = (bit_no - 1) & 7;
@@ -428,6 +467,7 @@ static void octet_reserved_bit(logging_state_t *log,
         s[7 - bit_no + ((bit_no < 4)  ?  1  :  0)] = (uint8_t) (bit + '0');
         span_log(log, SPAN_LOG_FLOW, "  %s= Unexpected state for reserved bit: %d\n", s, bit);
     }
+    /*endif*/
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -477,7 +517,7 @@ static void octet_field(logging_state_t *log,
     int i;
     uint8_t octet;
     const char *tag;
-    
+
     /* Break out the octet and the bit number range within it. */
     octet = msg[((start - 1) >> 3) + 3];
     start = (start - 1) & 7;
@@ -635,7 +675,7 @@ SPAN_DECLARE(void) t30_decode_dis_dtc_dcs(t30_state_t *s, const uint8_t *pkt, in
         span_log(log, SPAN_LOG_FLOW, "  Frame is short\n");
         return;
     }
-    
+
     span_log(log, SPAN_LOG_FLOW, "%s:\n", t30_frametype(pkt[2]));
     if (len <= 3)
     {
@@ -663,7 +703,7 @@ SPAN_DECLARE(void) t30_decode_dis_dtc_dcs(t30_state_t *s, const uint8_t *pkt, in
         span_log(log, SPAN_LOG_FLOW, "  Frame is short\n");
         return;
     }
-    
+
     if (frame_type == T30_DCS)
     {
         octet_reserved_bit(log, pkt, 9, 0);

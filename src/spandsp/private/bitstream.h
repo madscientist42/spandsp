@@ -33,7 +33,7 @@ struct bitstream_state_s
     uint32_t bitstream;
     /*! The residual bits in bitstream. */
     int residue;
-    /*! TRUE if the stream is LSB first, else MSB first */
+    /*! True if the stream is LSB first, else MSB first */
     int lsb_first;
 };
 

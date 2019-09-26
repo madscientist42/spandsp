@@ -44,8 +44,8 @@
 #include "floating_fudge.h"
 
 #include "spandsp/telephony.h"
+#include "spandsp/alloc.h"
 #include "spandsp/fast_convert.h"
-#include "spandsp/dc_restore.h"
 #include "spandsp/complex.h"
 #include "spandsp/dds.h"
 #include "spandsp/tone_generate.h"
@@ -70,7 +70,7 @@ SPAN_DECLARE(tone_gen_descriptor_t *) tone_gen_descriptor_init(tone_gen_descript
 {
     if (s == NULL)
     {
-        if ((s = (tone_gen_descriptor_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (tone_gen_descriptor_t *) span_alloc(sizeof(*s))) == NULL)
         {
             return NULL;
         }
@@ -108,14 +108,14 @@ SPAN_DECLARE(tone_gen_descriptor_t *) tone_gen_descriptor_init(tone_gen_descript
     s->duration[3] = d4*SAMPLE_RATE/1000;
 
     s->repeat = repeat;
-    
+
     return s;
 }
 /*- End of function --------------------------------------------------------*/
 
 SPAN_DECLARE(void) tone_gen_descriptor_free(tone_gen_descriptor_t *s)
 {
-    free(s);
+    span_free(s);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -131,14 +131,14 @@ SPAN_DECLARE_NONSTD(int) tone_gen(tone_gen_state_t *s, int16_t amp[], int max_sa
     int i;
 
     if (s->current_section < 0)
-        return  0;
+        return 0;
 
     for (samples = 0;  samples < max_samples;  )
     {
         limit = samples + s->duration[s->current_section] - s->current_position;
         if (limit > max_samples)
             limit = max_samples;
-        
+
         s->current_position += (limit - samples);
         if (s->current_section & 1)
         {
@@ -221,7 +221,7 @@ SPAN_DECLARE(tone_gen_state_t *) tone_gen_init(tone_gen_state_t *s, tone_gen_des
 
     if (s == NULL)
     {
-        if ((s = (tone_gen_state_t *) malloc(sizeof(*s))) == NULL)
+        if ((s = (tone_gen_state_t *) span_alloc(sizeof(*s))) == NULL)
         {
             return NULL;
         }
@@ -253,7 +253,7 @@ SPAN_DECLARE(int) tone_gen_release(tone_gen_state_t *s)
 SPAN_DECLARE(int) tone_gen_free(tone_gen_state_t *s)
 {
     if (s)
-        free(s);
+        span_free(s);
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

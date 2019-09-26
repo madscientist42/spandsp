@@ -74,7 +74,7 @@ typedef struct
     /*! \brief The current transmit step being timed */
     int timed_step;
 
-    /*! \brief TRUE is there has been some T.38 data missed */
+    /*! \brief True is there has been some T.38 data missed */
     int rx_data_missing;
 
     /*! \brief The number of octets to send in each image packet (non-ECM or ECM) at the current
@@ -82,10 +82,10 @@ typedef struct
     int octets_per_data_packet;
 
     /*! \brief An HDLC context used when sending HDLC messages to the terminal port
-               (ECM mode support). */
+               as if it were non-ECM data (ECM mode support). */
     hdlc_tx_state_t hdlc_tx_term;
     /*! \brief An HDLC context used when receiving HDLC messages from the terminal port.
-               (ECM mode support). */
+               as if it were non-ECM data (ECM mode support). */
     hdlc_rx_state_t hdlc_rx_term;
 
     struct
@@ -102,8 +102,8 @@ typedef struct
         int extra_bits;
     } hdlc_tx;
 
-    /*! \brief TRUE if we are using ECM mode. This is used to select HDLC faking, necessary
-               with clunky class 1 modems. */
+    /*! \brief True if we are using ECM mode. This is used to select HDLC faking, which is
+               necessary with clunky class 1 modems. */
     int ecm_mode;
 
     /*! \brief Counter for trailing non-ECM bytes, used to flush out the far end's modem. */
@@ -141,7 +141,7 @@ struct t31_state_s
 
     t31_audio_front_end_state_t audio;
     t31_t38_front_end_state_t t38_fe;
-    /*! TRUE if working in T.38 mode. */
+    /*! True if working in T.38 mode. */
     int t38_mode;
 
     /*! HDLC buffer, for composing an HDLC frame from the computer to the channel. */
@@ -150,34 +150,34 @@ struct t31_state_s
         uint8_t buf[T31_MAX_HDLC_LEN];
         int len;
         int ptr;
-        /*! \brief TRUE when the end of HDLC data from the computer has been detected. */
+        /*! \brief True when the end of HDLC data from the computer has been detected. */
         int final;
     } hdlc_tx;
     /*! Buffer for data from the computer to the channel. */
     struct
     {
         uint8_t data[T31_TX_BUF_LEN];
-        /*! \brief The number of bytes stored in transmit buffer. */
+        /*! \brief The number of bytes stored in the transmit buffer. */
         int in_bytes;
         /*! \brief The number of bytes sent from the transmit buffer. */
         int out_bytes;
-        /*! \brief TRUE if the flow of real data has started. */
+        /*! \brief True if the flow of real data has started. */
         int data_started;
-        /*! \brief TRUE if holding up further data into the buffer, for flow control. */
+        /*! \brief True if holding up further data into the buffer, for flow control. */
         int holding;
-        /*! \brief TRUE when the end of non-ECM data from the computer has been detected. */
+        /*! \brief True when the end of non-ECM data from the computer has been detected. */
         int final;
     } tx;
 
-    /*! TRUE if DLE prefix just used */
+    /*! True if DLE prefix just used */
     int dled;
 
-	/*! \brief Samples of silence awaited, as specified in a "wait for silence" command */
+    /*! \brief Samples of silence awaited, as specified in a "wait for silence" command */
     int silence_awaited;
 
     /*! \brief The current bit rate for the FAX fast message transfer modem. */
     int bit_rate;
-    /*! \brief TRUE if a valid HDLC frame has been received in the current reception period. */
+    /*! \brief True if a valid HDLC frame has been received in the current reception period. */
     int rx_frame_received;
 
     /*! \brief Samples elapsed in the current call */
@@ -186,7 +186,7 @@ struct t31_state_s
 
     /*! \brief The currently queued modem type. */
     int modem;
-    /*! \brief TRUE when short training mode has been selected by the computer. */
+    /*! \brief True when short training mode has been selected by the computer. */
     int short_train;
     queue_state_t *rx_queue;
 

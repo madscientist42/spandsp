@@ -214,7 +214,7 @@ static void dither_tests_gray16(void)
     }
 
     s = image_translate_init(s, IMAGE_TRANSLATE_FROM_GRAY_16, im.width, im.length, -1, row_read, &im);
-    get_flattened_image(s, TRUE);
+    get_flattened_image(s, true);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -240,7 +240,7 @@ static void dither_tests_gray8(void)
             image[i*im.width + j] = j*1200/256;
     }
     s = image_translate_init(s, IMAGE_TRANSLATE_FROM_GRAY_8, im.width, im.length, -1, row_read, &im);
-    get_flattened_image(s, TRUE);
+    get_flattened_image(s, true);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -270,7 +270,7 @@ static void dither_tests_colour16(void)
         }
     }
     s = image_translate_init(s, IMAGE_TRANSLATE_FROM_COLOUR_16, im.width, im.length, -1, row_read, &im);
-    get_flattened_image(s, TRUE);
+    get_flattened_image(s, true);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -301,7 +301,7 @@ static void dither_tests_colour8(void)
     }
 
     s = image_translate_init(s, IMAGE_TRANSLATE_FROM_COLOUR_8, im.width, im.length, -1, row_read, &im);
-    get_flattened_image(s, TRUE);
+    get_flattened_image(s, true);
 }
 /*- End of function --------------------------------------------------------*/
 
@@ -333,7 +333,7 @@ static void grow_tests_colour8(void)
 
     s1 = image_translate_init(s1, IMAGE_TRANSLATE_FROM_COLOUR_8, im.width, im.length, 200, row_read, &im);
 
-    get_flattened_image(s1, FALSE);
+    get_flattened_image(s1, false);
 }
 /*- End of function --------------------------------------------------------*/
 

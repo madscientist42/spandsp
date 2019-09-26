@@ -39,15 +39,13 @@
 #include <string.h>
 #include <assert.h>
 
-//#if defined(WITH_SPANDSP_INTERNALS)
 #define SPANDSP_EXPOSE_INTERNAL_STRUCTURES
-//#endif
 
 #include "spandsp.h"
 
 uint8_t buffer[256];
 
-#define PATTERN             0x11111111
+#define PATTERN             0x1111111
 #define SEQUENCE_LENGTH     17
 
 uint8_t left[] =
@@ -108,12 +106,12 @@ int main(int argc, char *argv[])
     unsigned int x;
     int total_bits;
 
-    s = bitstream_init(&state, TRUE);
+    s = bitstream_init(&state, true);
     w = buffer;
     total_bits = 0;
     for (i = 0;  i < SEQUENCE_LENGTH;  i++)
     {
-        bitstream_put(s, &w, PATTERN*i, i + 1);
+        bitstream_put(s, &w, i*PATTERN, i + 1);
         total_bits += (i + 1);
     }
     bitstream_flush(s, &w);
@@ -132,7 +130,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    s = bitstream_init(&state, TRUE);
+    s = bitstream_init(&state, true);
     r = buffer;
     for (i = 0;  i < SEQUENCE_LENGTH;  i++)
     {
@@ -145,7 +143,7 @@ int main(int argc, char *argv[])
         }
     }
 
-    s = bitstream_init(&state, FALSE);
+    s = bitstream_init(&state, false);
     w = buffer;
     total_bits = 0;
     for (i = 0;  i < SEQUENCE_LENGTH;  i++)
@@ -155,7 +153,7 @@ int main(int argc, char *argv[])
     }
     bitstream_flush(s, &w);
     printf("%d bits written\n", total_bits);
-    
+
     for (cc = buffer;  cc < w;  cc++)
         printf("%02X ", *cc);
     printf("\n");
@@ -169,7 +167,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    s = bitstream_init(&state, FALSE);
+    s = bitstream_init(&state, false);
     r = buffer;
     for (i = 0;  i < SEQUENCE_LENGTH;  i++)
     {

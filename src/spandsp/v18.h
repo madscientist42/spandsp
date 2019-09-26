@@ -22,7 +22,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 /*! \file */
 
 /*! \page v18_page The V.18 text telephony protocols
@@ -39,19 +39,19 @@ typedef struct v18_state_s v18_state_t;
 enum
 {
     V18_MODE_NONE = 0,
-    /* V.18 Annex A - Weitbrecht TDD at 45.45bps, half-duplex, 5 bit baudot. */
+    /* V.18 Annex A - Weitbrecht TDD at 45.45bps (US TTY), half-duplex, 5 bit baudot (USA). */
     V18_MODE_5BIT_45 = 1,
-    /* V.18 Annex A - Weitbrecht TDD at 50bps, half-duplex, 5 bit baudot. */
+    /* V.18 Annex A - Weitbrecht TDD at 50bps (International TTY), half-duplex, 5 bit baudot (UK, Australia and others). */
     V18_MODE_5BIT_50 = 2,
-    /* V.18 Annex B - DTMF encoding of ASCII. */
+    /* V.18 Annex B - DTMF encoding of ASCII (Denmark, Holland and others). */
     V18_MODE_DTMF = 3,
-    /* V.18 Annex C - EDT 110bps, V.21, half-duplex, ASCII. */
+    /* V.18 Annex C - EDT (European Deaf Telephone) 110bps, V.21, half-duplex, ASCII (Germany, Austria, Switzerland and others). */
     V18_MODE_EDT = 4,
-    /* V.18 Annex D - 300bps, Bell 103, duplex, ASCII. */
+    /* V.18 Annex D - 300bps, Bell 103, duplex, ASCII (USA). */
     V18_MODE_BELL103 = 5,
-    /* V.18 Annex E - 1200bps Videotex terminals, ASCII. */
+    /* V.18 Annex E - 1200bps Videotex terminals, ASCII (France). */
     V18_MODE_V23VIDEOTEX = 6,
-    /* V.18 Annex F - V.21 text telephone, V.21, duplex, ASCII. */
+    /* V.18 Annex F - V.21 text telephone, V.21, duplex, ASCII (Sweden, Norway and Finland). */
     V18_MODE_V21TEXTPHONE = 7,
     /* V.18 Annex G - V.18 text telephone mode. */
     V18_MODE_V18TEXTPHONE = 8
@@ -67,7 +67,7 @@ SPAN_DECLARE(logging_state_t *) v18_get_logging_state(v18_state_t *s);
 /*! Initialise a V.18 context.
     \brief Initialise a V.18 context.
     \param s The V.18 context.
-    \param calling_party TRUE if caller mode, else answerer mode.
+    \param calling_party True if caller mode, else answerer mode.
     \param mode Mode of operation.
     \param put_msg A callback routine called to deliver the received text
            to the application.

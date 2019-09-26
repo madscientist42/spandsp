@@ -89,23 +89,23 @@ SPAN_DECLARE(int) t31_t38_send_timeout(t31_state_t *s, int samples);
 /*! Select whether silent audio will be sent when transmit is idle.
     \brief Select whether silent audio will be sent when transmit is idle.
     \param s The T.31 modem context.
-    \param transmit_on_idle TRUE if silent audio should be output when the transmitter is
-           idle. FALSE to transmit zero length audio when the transmitter is idle. The default
-           behaviour is FALSE.
+    \param transmit_on_idle True if silent audio should be output when the transmitter is
+           idle. False to transmit zero length audio when the transmitter is idle. The default
+           behaviour is false.
 */
 SPAN_DECLARE(void) t31_set_transmit_on_idle(t31_state_t *s, int transmit_on_idle);
 
 /*! Select whether TEP mode will be used (or time allowed for it (when transmitting).
     \brief Select whether TEP mode will be used.
     \param s The T.31 modem context.
-    \param use_tep TRUE if TEP is to be ised.
+    \param use_tep True if TEP is to be used.
 */
 SPAN_DECLARE(void) t31_set_tep_mode(t31_state_t *s, int use_tep);
 
 /*! Select whether T.38 data will be paced as it is transmitted.
     \brief Select whether T.38 data will be paced.
     \param s The T.31 modem context.
-    \param without_pacing TRUE if data is to be sent as fast as possible. FALSE if it is
+    \param without_pacing True if data is to be sent as fast as possible. False if it is
            to be paced.
 */
 SPAN_DECLARE(void) t31_set_t38_config(t31_state_t *s, int without_pacing);

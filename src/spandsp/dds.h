@@ -227,6 +227,13 @@ SPAN_DECLARE(float) ddsf(uint32_t *phase_acc, int32_t phase_rate);
 */
 SPAN_DECLARE(float) dds_lookupf(uint32_t phase);
 
+/*! \brief Lookup the floating point value of a particular phase offset from an accumulated phase.
+    \param phase_acc The accumulated phase.
+    \param phase_offset The phase offset.
+    \return The signal amplitude.
+*/
+SPAN_DECLARE(float) dds_offsetf(uint32_t phase_acc, int32_t phase_offset);
+
 /*! \brief Generate a floating point tone sample, with modulation.
     \param phase_acc A pointer to a phase accumulator value.
     \param phase_rate The phase increment to be applied.
