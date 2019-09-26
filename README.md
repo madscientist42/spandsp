@@ -1,4 +1,4 @@
-spandsp 0.0.5 - A DSP library for telephony
+spandsp 0.0.6 - A DSP library for telephony
 -------------------------------------------
 
 SpanDSP is a library of DSP functions for telephony, in the 8000 sample per
@@ -29,7 +29,10 @@ FFTW may be used. Spandsp adapts to the differences between them.
 fltk (and fltk-devel), Fl_Cartesian and Fl_Audio_Meter are required to build
 the test suite with GUI interfaces for some of the tests. The tests will build
 without these packages, but the GUI features will not be available.
-Fl_Cartesian and Fl_Audio_Meter can be downloaded from
-http://www.soft-switch.org/downloads.
+Fl_Cartesian and Fl_Audio_Meter can be downloaded from GitHub at 
+https://github.com/madscientist42/spandsp-fltk-libs.
 
 Steve Underwood <steveu@coppice.org>
+
+(New maintainer...)
+Frank Earl <linusti@gmail.com>
