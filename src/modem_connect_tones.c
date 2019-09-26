@@ -23,7 +23,7 @@
  * License along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
- 
+
 /*! \file */
 
 /* CNG is 0.5s+-15% of 1100+-38Hz, 3s+-15% off, repeating.
@@ -36,7 +36,7 @@
 
    ANS/ is 3.3+-0.7s of 2100+-15Hz, with phase reversals (180+-10 degrees, hopping in <1ms) every 450+-25ms.
 
-   ANSam/ is 2100+-1Hz, with phase reversals (180+-10 degrees, hopping in <1ms) every 450+-25ms, and AM with a sinewave of 15+-0.1Hz. 
+   ANSam/ is 2100+-1Hz, with phase reversals (180+-10 degrees, hopping in <1ms) every 450+-25ms, and AM with a sinewave of 15+-0.1Hz.
    The modulated envelope ranges in amplitude between (0.8+-0.01) and (1.2+-0.01) times its average
    amplitude. It lasts up to 5s, but will be stopped early if the V.8 protocol proceeds. */
 
@@ -435,7 +435,7 @@ static void v21_put_bit(void *user_data, int bit)
                     s->flags_seen = 0;
                 if (++s->flags_seen >= HDLC_FRAMING_OK_THRESHOLD  &&  !s->framing_ok_announced)
                 {
-                    report_tone_state(s, MODEM_CONNECT_TONES_FAX_PREAMBLE, lfastrintf(fsk_rx_signal_power(&s->v21rx)));
+                    report_tone_state(s, MODEM_CONNECT_TONES_FAX_PREAMBLE, lfastrintf(fsk_rx_signal_power(&(s->v21rx))));
                     s->framing_ok_announced = true;
                 }
             }
@@ -493,7 +493,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
                 if (s->tone_present != MODEM_CONNECT_TONES_FAX_CNG)
                 {
                     if (++s->tone_cycle_duration >= ms_to_samples(415))
-                        report_tone_state(s, MODEM_CONNECT_TONES_FAX_CNG, lfastrintf(log10f(s->channel_level/32768.0f)*20.0f + DBM0_MAX_POWER + 0.8f));
+                        report_tone_state(s, MODEM_CONNECT_TONES_FAX_CNG, lfastrintf(((s->channel_level == 0)  ?  (-96.329f + DBM0_MAX_POWER)  :  log10f(s->channel_level/32768.0f)*20.0f) + DBM0_MAX_POWER + 0.8f));
                 }
             }
             else
@@ -508,12 +508,12 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
         break;
     case MODEM_CONNECT_TONES_FAX_PREAMBLE:
         /* Ignore any CED tone, and just look for V.21 preamble. */
-        fsk_rx(&s->v21rx, amp, len);
+        fsk_rx(&(s->v21rx), amp, len);
         break;
     case MODEM_CONNECT_TONES_FAX_CED_OR_PREAMBLE:
         /* Also look for V.21 preamble. A lot of machines don't send the 2100Hz burst. It
            might also not be seen all the way through the channel, due to switching delays. */
-        fsk_rx(&s->v21rx, amp, len);
+        fsk_rx(&(s->v21rx), amp, len);
         /* Now fall through and look for a 2100Hz tone */
     case MODEM_CONNECT_TONES_ANS:
         for (i = 0;  i < len;  i++)
@@ -526,7 +526,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
             filtered = 0.001599787f*(v1 - s->z15hz_2);
             s->z15hz_2 = s->z15hz_1;
             s->z15hz_1 = v1;
-            s->am_level += abs(lfastrintf(filtered)) - (s->am_level >> 8);
+            s->am_level += abs((int) lfastrintf(filtered)) - (s->am_level >> 8);
             //printf("%9.1f %10.4f %9d %9d\n", famp, filtered, s->am_level, s->channel_level);
             /* A Cauer notch at 2100Hz, spread just wide enough to meet our detection bandwidth
                criteria. */
@@ -572,7 +572,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
                         {
                             report_tone_state(s,
                                               (s->am_level*15/256 > s->channel_level)  ?  MODEM_CONNECT_TONES_ANSAM_PR  :  MODEM_CONNECT_TONES_ANS_PR,
-                                              lfastrintf(log10f(s->channel_level/32768.0f)*20.0f + DBM0_MAX_POWER + 0.8f));
+                                              lfastrintf(((s->channel_level == 0)  ?  (-96.329f + DBM0_MAX_POWER)  :  log10f(s->channel_level/32768.0f)*20.0f) + DBM0_MAX_POWER + 0.8f));
                         }
                     }
                     else
@@ -590,7 +590,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
                         {
                             report_tone_state(s,
                                               (s->am_level*15/256 > s->channel_level)  ?  MODEM_CONNECT_TONES_ANSAM  :  MODEM_CONNECT_TONES_ANS,
-                                              lfastrintf(log10f(s->channel_level/32768.0f)*20.0f + DBM0_MAX_POWER + 0.8f));
+                                              lfastrintf(((s->channel_level == 0)  ?  (-96.329f + DBM0_MAX_POWER)  :  log10f(s->channel_level/32768.0f)*20.0f) + DBM0_MAX_POWER + 0.8f));
                         }
                         s->good_cycles = 0;
                         s->tone_cycle_duration = ms_to_samples(450 + 100);
@@ -644,7 +644,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
                 if (s->tone_present != MODEM_CONNECT_TONES_BELL_ANS)
                 {
                     if (++s->tone_cycle_duration >= ms_to_samples(415))
-                        report_tone_state(s, MODEM_CONNECT_TONES_BELL_ANS, lfastrintf(log10f(s->channel_level/32768.0f)*20.0f + DBM0_MAX_POWER + 0.8f));
+                        report_tone_state(s, MODEM_CONNECT_TONES_BELL_ANS, lfastrintf(((s->channel_level == 0)  ?  (-96.329f + DBM0_MAX_POWER)  :  log10f(s->channel_level/32768.0f)*20.0f) + DBM0_MAX_POWER + 0.8f));
                 }
             }
             else
@@ -682,7 +682,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx(modem_connect_tones_rx_state_t *
                 if (s->tone_present != MODEM_CONNECT_TONES_CALLING_TONE)
                 {
                     if (++s->tone_cycle_duration >= ms_to_samples(415))
-                        report_tone_state(s, MODEM_CONNECT_TONES_CALLING_TONE, lfastrintf(log10f(s->channel_level/32768.0f)*20.0f + DBM0_MAX_POWER + 0.8f));
+                        report_tone_state(s, MODEM_CONNECT_TONES_CALLING_TONE, lfastrintf(((s->channel_level == 0)  ?  (-96.329f + DBM0_MAX_POWER)  :  log10f(s->channel_level/32768.0f)*20.0f) + DBM0_MAX_POWER + 0.8f));
                 }
             }
             else
@@ -709,7 +709,7 @@ SPAN_DECLARE_NONSTD(int) modem_connect_tones_rx_fillin(modem_connect_tones_rx_st
 SPAN_DECLARE(int) modem_connect_tones_rx_get(modem_connect_tones_rx_state_t *s)
 {
     int x;
-    
+
     x = s->hit;
     s->hit = MODEM_CONNECT_TONES_NONE;
     return x;
@@ -732,8 +732,8 @@ SPAN_DECLARE(modem_connect_tones_rx_state_t *) modem_connect_tones_rx_init(modem
     {
     case MODEM_CONNECT_TONES_FAX_PREAMBLE:
     case MODEM_CONNECT_TONES_FAX_CED_OR_PREAMBLE:
-        fsk_rx_init(&s->v21rx, &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, v21_put_bit, s);
-        fsk_rx_signal_cutoff(&s->v21rx, -45.5f);
+        fsk_rx_init(&(s->v21rx), &preset_fsk_specs[FSK_V21CH2], FSK_FRAME_MODE_SYNC, v21_put_bit, s);
+        fsk_rx_signal_cutoff(&(s->v21rx), -45.5f);
         break;
     case MODEM_CONNECT_TONES_ANS_PR:
     case MODEM_CONNECT_TONES_ANSAM:

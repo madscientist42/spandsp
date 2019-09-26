@@ -118,26 +118,34 @@ SPAN_DECLARE(int) t33_sub_address_extract_field(uint8_t num[21], const uint8_t t
             {
                 type = T33_SST;
             }
+            /*endif*/
             while (t33[i])
             {
                 ch = t33[i++];
                 if (ch == '#')
                     break;
+                /*endif*/
                 num[j++] = ch;
                 if (j >= 20)
                     return -1;
+                /*endif*/
             }
+            /*endwhile*/
             num[j] = '\0';
             return type;
         }
+        /*endif*/
         /* Skip this field */
         i++;
         while (t33[i])
         {
             if (t33[i++] == '#')
                 break;
+            /*endif*/
         }
+        /*endwhile*/
     }
+    /*endfor*/
     return T33_NONE;
 }
 /*- End of function --------------------------------------------------------*/
@@ -146,8 +154,10 @@ SPAN_DECLARE(void) t33_sub_address_add_field(uint8_t t33[], const uint8_t field[
 {
     if (t33[0] != '\0')
         strcat((char *) t33, "#");
+    /*endif*/
     if (type == T33_SST)
         strcat((char *) t33, "#");
+    /*endif*/
     strcat((char *) t33, (const char *) field);
 }
 /*- End of function --------------------------------------------------------*/
@@ -159,8 +169,10 @@ SPAN_DECLARE(int) t30_set_tx_ident(t30_state_t *s, const char *id)
         s->tx_info.ident[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(id) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.ident, id);
     t4_tx_set_local_ident(&s->t4.tx, s->tx_info.ident);
     return 0;
@@ -171,6 +183,7 @@ SPAN_DECLARE(const char *) t30_get_tx_ident(t30_state_t *s)
 {
     if (s->tx_info.ident[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.ident;
 }
 /*- End of function --------------------------------------------------------*/
@@ -179,6 +192,7 @@ SPAN_DECLARE(const char *) t30_get_rx_ident(t30_state_t *s)
 {
     if (s->rx_info.ident[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.ident;
 }
 /*- End of function --------------------------------------------------------*/
@@ -190,8 +204,10 @@ SPAN_DECLARE(int) t30_set_tx_sub_address(t30_state_t *s, const char *sub_address
         s->tx_info.sub_address[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(sub_address) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.sub_address, sub_address);
     return 0;
 }
@@ -201,6 +217,7 @@ SPAN_DECLARE(const char *) t30_get_tx_sub_address(t30_state_t *s)
 {
     if (s->tx_info.sub_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.sub_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -209,6 +226,7 @@ SPAN_DECLARE(const char *) t30_get_rx_sub_address(t30_state_t *s)
 {
     if (s->rx_info.sub_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.sub_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -220,8 +238,10 @@ SPAN_DECLARE(int) t30_set_tx_selective_polling_address(t30_state_t *s, const cha
         s->tx_info.selective_polling_address[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(selective_polling_address) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.selective_polling_address, selective_polling_address);
     return 0;
 }
@@ -231,6 +251,7 @@ SPAN_DECLARE(const char *) t30_get_tx_selective_polling_address(t30_state_t *s)
 {
     if (s->tx_info.selective_polling_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.selective_polling_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -239,6 +260,7 @@ SPAN_DECLARE(const char *) t30_get_rx_selective_polling_address(t30_state_t *s)
 {
     if (s->rx_info.selective_polling_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.selective_polling_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -250,8 +272,10 @@ SPAN_DECLARE(int) t30_set_tx_polled_sub_address(t30_state_t *s, const char *poll
         s->tx_info.polled_sub_address[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(polled_sub_address) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.polled_sub_address, polled_sub_address);
     return 0;
 }
@@ -261,6 +285,7 @@ SPAN_DECLARE(const char *) t30_get_tx_polled_sub_address(t30_state_t *s)
 {
     if (s->tx_info.polled_sub_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.polled_sub_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -269,6 +294,7 @@ SPAN_DECLARE(const char *) t30_get_rx_polled_sub_address(t30_state_t *s)
 {
     if (s->rx_info.polled_sub_address[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.polled_sub_address;
 }
 /*- End of function --------------------------------------------------------*/
@@ -280,8 +306,10 @@ SPAN_DECLARE(int) t30_set_tx_sender_ident(t30_state_t *s, const char *sender_ide
         s->tx_info.sender_ident[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(sender_ident) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.sender_ident, sender_ident);
     return 0;
 }
@@ -291,6 +319,7 @@ SPAN_DECLARE(const char *) t30_get_tx_sender_ident(t30_state_t *s)
 {
     if (s->tx_info.sender_ident[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.sender_ident;
 }
 /*- End of function --------------------------------------------------------*/
@@ -299,6 +328,7 @@ SPAN_DECLARE(const char *) t30_get_rx_sender_ident(t30_state_t *s)
 {
     if (s->rx_info.sender_ident[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.sender_ident;
 }
 /*- End of function --------------------------------------------------------*/
@@ -310,8 +340,10 @@ SPAN_DECLARE(int) t30_set_tx_password(t30_state_t *s, const char *password)
         s->tx_info.password[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(password) > T30_MAX_IDENT_LEN)
         return -1;
+    /*endif*/
     strcpy(s->tx_info.password, password);
     return 0;
 }
@@ -321,6 +353,7 @@ SPAN_DECLARE(const char *) t30_get_tx_password(t30_state_t *s)
 {
     if (s->tx_info.password[0] == '\0')
         return NULL;
+    /*endif*/
     return s->tx_info.password;
 }
 /*- End of function --------------------------------------------------------*/
@@ -329,6 +362,7 @@ SPAN_DECLARE(const char *) t30_get_rx_password(t30_state_t *s)
 {
     if (s->rx_info.password[0] == '\0')
         return NULL;
+    /*endif*/
     return s->rx_info.password;
 }
 /*- End of function --------------------------------------------------------*/
@@ -337,6 +371,7 @@ SPAN_DECLARE(int) t30_set_tx_nsf(t30_state_t *s, const uint8_t *nsf, int len)
 {
     if (s->tx_info.nsf)
         span_free(s->tx_info.nsf);
+    /*endif*/
     if (nsf  &&  len > 0  &&  (s->tx_info.nsf = span_alloc(len + 3)))
     {
         memcpy(&s->tx_info.nsf[3], nsf, len);
@@ -347,6 +382,7 @@ SPAN_DECLARE(int) t30_set_tx_nsf(t30_state_t *s, const uint8_t *nsf, int len)
         s->tx_info.nsf = NULL;
         s->tx_info.nsf_len = 0;
     }
+    /*endif*/
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -355,6 +391,7 @@ SPAN_DECLARE(size_t) t30_get_tx_nsf(t30_state_t *s, const uint8_t *nsf[])
 {
     if (nsf)
         *nsf = s->tx_info.nsf;
+    /*endif*/
     return s->tx_info.nsf_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -363,6 +400,7 @@ SPAN_DECLARE(size_t) t30_get_rx_nsf(t30_state_t *s, const uint8_t *nsf[])
 {
     if (nsf)
         *nsf = s->rx_info.nsf;
+    /*endif*/
     return s->rx_info.nsf_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -371,6 +409,7 @@ SPAN_DECLARE(int) t30_set_tx_nsc(t30_state_t *s, const uint8_t *nsc, int len)
 {
     if (s->tx_info.nsc)
         span_free(s->tx_info.nsc);
+    /*endif*/
     if (nsc  &&  len > 0  &&  (s->tx_info.nsc = span_alloc(len + 3)))
     {
         memcpy(&s->tx_info.nsc[3], nsc, len);
@@ -381,6 +420,7 @@ SPAN_DECLARE(int) t30_set_tx_nsc(t30_state_t *s, const uint8_t *nsc, int len)
         s->tx_info.nsc = NULL;
         s->tx_info.nsc_len = 0;
     }
+    /*endif*/
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -389,6 +429,7 @@ SPAN_DECLARE(size_t) t30_get_tx_nsc(t30_state_t *s, const uint8_t *nsc[])
 {
     if (nsc)
         *nsc = s->tx_info.nsc;
+    /*endif*/
     return s->tx_info.nsc_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -397,6 +438,7 @@ SPAN_DECLARE(size_t) t30_get_rx_nsc(t30_state_t *s, const uint8_t *nsc[])
 {
     if (nsc)
         *nsc = s->rx_info.nsc;
+    /*endif*/
     return s->rx_info.nsc_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -405,6 +447,7 @@ SPAN_DECLARE(int) t30_set_tx_nss(t30_state_t *s, const uint8_t *nss, int len)
 {
     if (s->tx_info.nss)
         span_free(s->tx_info.nss);
+    /*endif*/
     if (nss  &&  len > 0  &&  (s->tx_info.nss = span_alloc(len + 3)))
     {
         memcpy(&s->tx_info.nss[3], nss, len);
@@ -415,6 +458,7 @@ SPAN_DECLARE(int) t30_set_tx_nss(t30_state_t *s, const uint8_t *nss, int len)
         s->tx_info.nss = NULL;
         s->tx_info.nss_len = 0;
     }
+    /*endif*/
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -423,6 +467,7 @@ SPAN_DECLARE(size_t) t30_get_tx_nss(t30_state_t *s, const uint8_t *nss[])
 {
     if (nss)
         *nss = s->tx_info.nss;
+    /*endif*/
     return s->tx_info.nss_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -431,6 +476,7 @@ SPAN_DECLARE(size_t) t30_get_rx_nss(t30_state_t *s, const uint8_t *nss[])
 {
     if (nss)
         *nss = s->rx_info.nss;
+    /*endif*/
     return s->rx_info.nss_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -439,20 +485,24 @@ SPAN_DECLARE(int) t30_set_tx_tsa(t30_state_t *s, int type, const char *address, 
 {
     if (s->tx_info.tsa)
         span_free(s->tx_info.tsa);
+    /*endif*/
     if (address == NULL  ||  len == 0)
     {
         s->tx_info.tsa = NULL;
         s->tx_info.tsa_len = 0;
         return 0;
     }
+    /*endif*/
     s->tx_info.tsa_type = type;
     if (len < 0)
         len = strlen(address);
+    /*endif*/
     if ((s->tx_info.tsa = span_alloc(len)))
     {
         memcpy(s->tx_info.tsa, address, len);
         s->tx_info.tsa_len = len;
     }
+    /*endif*/
     return 0;
 }
 /*- End of function --------------------------------------------------------*/
@@ -461,8 +511,10 @@ SPAN_DECLARE(size_t) t30_get_tx_tsa(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->tx_info.tsa_type;
+    /*endif*/
     if (address)
         *address = s->tx_info.tsa;
+    /*endif*/
     return s->tx_info.tsa_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -471,8 +523,10 @@ SPAN_DECLARE(size_t) t30_get_rx_tsa(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->rx_info.tsa_type;
+    /*endif*/
     if (address)
         *address = s->rx_info.tsa;
+    /*endif*/
     return s->rx_info.tsa_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -481,11 +535,13 @@ SPAN_DECLARE(int) t30_set_tx_ira(t30_state_t *s, int type, const char *address, 
 {
     if (s->tx_info.ira)
         span_free(s->tx_info.ira);
+    /*endif*/
     if (address == NULL)
     {
         s->tx_info.ira = NULL;
         return 0;
     }
+    /*endif*/
     s->tx_info.ira = strdup(address);
     return 0;
 }
@@ -495,8 +551,10 @@ SPAN_DECLARE(size_t) t30_get_tx_ira(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->tx_info.ira_type;
+    /*endif*/
     if (address)
         *address = s->tx_info.ira;
+    /*endif*/
     return s->tx_info.ira_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -505,8 +563,10 @@ SPAN_DECLARE(size_t) t30_get_rx_ira(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->rx_info.ira_type;
+    /*endif*/
     if (address)
         *address = s->rx_info.ira;
+    /*endif*/
     return s->rx_info.ira_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -515,11 +575,13 @@ SPAN_DECLARE(int) t30_set_tx_cia(t30_state_t *s, int type, const char *address, 
 {
     if (s->tx_info.cia)
         span_free(s->tx_info.cia);
+    /*endif*/
     if (address == NULL)
     {
         s->tx_info.cia = NULL;
         return 0;
     }
+    /*endif*/
     s->tx_info.cia = strdup(address);
     return 0;
 }
@@ -529,8 +591,10 @@ SPAN_DECLARE(size_t) t30_get_tx_cia(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->tx_info.cia_type;
+    /*endif*/
     if (address)
         *address = s->tx_info.cia;
+    /*endif*/
     return s->tx_info.cia_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -539,8 +603,10 @@ SPAN_DECLARE(size_t) t30_get_rx_cia(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->rx_info.cia_type;
+    /*endif*/
     if (address)
         *address = s->rx_info.cia;
+    /*endif*/
     return s->rx_info.cia_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -549,11 +615,13 @@ SPAN_DECLARE(int) t30_set_tx_isp(t30_state_t *s, int type, const char *address, 
 {
     if (s->tx_info.isp)
         span_free(s->tx_info.isp);
+    /*endif*/
     if (address == NULL)
     {
         s->tx_info.isp = NULL;
         return 0;
     }
+    /*endif*/
     s->tx_info.isp = strdup(address);
     return 0;
 }
@@ -563,8 +631,10 @@ SPAN_DECLARE(size_t) t30_get_tx_isp(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->tx_info.isp_type;
+    /*endif*/
     if (address)
         *address = s->tx_info.isp;
+    /*endif*/
     return s->tx_info.isp_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -573,8 +643,10 @@ SPAN_DECLARE(size_t) t30_get_rx_isp(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->rx_info.isp_type;
+    /*endif*/
     if (address)
         *address = s->rx_info.isp;
+    /*endif*/
     return s->rx_info.isp_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -583,11 +655,13 @@ SPAN_DECLARE(int) t30_set_tx_csa(t30_state_t *s, int type, const char *address, 
 {
     if (s->tx_info.csa)
         span_free(s->tx_info.csa);
+    /*endif*/
     if (address == NULL)
     {
         s->tx_info.csa = NULL;
         return 0;
     }
+    /*endif*/
     s->tx_info.csa = strdup(address);
     return 0;
 }
@@ -597,8 +671,10 @@ SPAN_DECLARE(size_t) t30_get_tx_csa(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->tx_info.csa_type;
+    /*endif*/
     if (address)
         *address = s->tx_info.csa;
+    /*endif*/
     return s->tx_info.csa_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -607,8 +683,10 @@ SPAN_DECLARE(size_t) t30_get_rx_csa(t30_state_t *s, int *type, const char *addre
 {
     if (type)
         *type = s->rx_info.csa_type;
+    /*endif*/
     if (address)
         *address = s->rx_info.csa;
+    /*endif*/
     return s->rx_info.csa_len;
 }
 /*- End of function --------------------------------------------------------*/
@@ -630,8 +708,10 @@ SPAN_DECLARE(int) t30_set_tx_page_header_info(t30_state_t *s, const char *info)
         s->header_info[0] = '\0';
         return 0;
     }
+    /*endif*/
     if (strlen(info) > T30_MAX_PAGE_HEADER_INFO)
         return -1;
+    /*endif*/
     strcpy(s->header_info, info);
     t4_tx_set_header_info(&s->t4.tx, s->header_info);
     return 0;
@@ -642,6 +722,7 @@ SPAN_DECLARE(size_t) t30_get_tx_page_header_info(t30_state_t *s, char *info)
 {
     if (info)
         strcpy(info, s->header_info);
+    /*endif*/
     return strlen(s->header_info);
 }
 /*- End of function --------------------------------------------------------*/
@@ -654,6 +735,7 @@ SPAN_DECLARE(int) t30_set_tx_page_header_tz(t30_state_t *s, const char *tzstring
         t4_tx_set_header_tz(&s->t4.tx, &s->tz);
         return 0;
     }
+    /*endif*/
     return -1;
 }
 /*- End of function --------------------------------------------------------*/
@@ -717,6 +799,7 @@ SPAN_DECLARE(int) t30_set_rx_encoding(t30_state_t *s, int encoding)
         s->output_encoding = encoding;
         return 0;
     }
+    /*endswitch*/
     return -1;
 }
 /*- End of function --------------------------------------------------------*/
@@ -737,6 +820,7 @@ SPAN_DECLARE(int) t30_set_minimum_scan_line_time(t30_state_t *s, int min_time)
         s->local_min_scan_time_code = 4;
     else
         return -1;
+    /*endif*/
     t30_build_dis_or_dtc(s);
     return 0;
 }
@@ -801,6 +885,7 @@ SPAN_DECLARE(void) t30_set_status(t30_state_t *s, int status)
         span_log(&s->logging, SPAN_LOG_FLOW, "Status changing to '%s'\n", t30_completion_code_to_str(status));
         s->current_status = status;
     }
+    /*endif*/
 }
 /*- End of function --------------------------------------------------------*/
 

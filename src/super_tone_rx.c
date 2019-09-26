@@ -96,7 +96,7 @@ static int add_super_tone_freq(super_tone_rx_descriptor_t *desc, int freq)
     desc->pitches[i][1] = desc->monitored_frequencies;
     if (desc->monitored_frequencies%5 == 0)
     {
-        desc->desc = (goertzel_descriptor_t *) realloc(desc->desc, (desc->monitored_frequencies + 5)*sizeof(goertzel_descriptor_t));
+        desc->desc = (goertzel_descriptor_t *) span_realloc(desc->desc, (desc->monitored_frequencies + 5)*sizeof(goertzel_descriptor_t));
     }
     make_goertzel_descriptor(&desc->desc[desc->monitored_frequencies++], (float) freq, SUPER_TONE_BINS);
     desc->used_frequencies++;
@@ -108,8 +108,8 @@ SPAN_DECLARE(int) super_tone_rx_add_tone(super_tone_rx_descriptor_t *desc)
 {
     if (desc->tones%5 == 0)
     {
-        desc->tone_list = (super_tone_rx_segment_t **) realloc(desc->tone_list, (desc->tones + 5)*sizeof(super_tone_rx_segment_t *));
-        desc->tone_segs = (int *) realloc(desc->tone_segs, (desc->tones + 5)*sizeof(int));
+        desc->tone_list = (super_tone_rx_segment_t **) span_realloc(desc->tone_list, (desc->tones + 5)*sizeof(super_tone_rx_segment_t *));
+        desc->tone_segs = (int *) span_realloc(desc->tone_segs, (desc->tones + 5)*sizeof(int));
     }
     desc->tone_list[desc->tones] = NULL;
     desc->tone_segs[desc->tones] = 0;
@@ -130,7 +130,7 @@ SPAN_DECLARE(int) super_tone_rx_add_element(super_tone_rx_descriptor_t *desc,
     step = desc->tone_segs[tone];
     if (step%5 == 0)
     {
-        desc->tone_list[tone] = (super_tone_rx_segment_t *) realloc(desc->tone_list[tone], (step + 5)*sizeof(super_tone_rx_segment_t));
+        desc->tone_list[tone] = (super_tone_rx_segment_t *) span_realloc(desc->tone_list[tone], (step + 5)*sizeof(super_tone_rx_segment_t));
     }
     desc->tone_list[tone][step].f1 = add_super_tone_freq(desc, f1);
     desc->tone_list[tone][step].f2 = add_super_tone_freq(desc, f2);
@@ -400,7 +400,7 @@ static void super_tone_chunk(super_tone_rx_state_t *s)
                                     s->segments[9].f2,
                                     s->segments[9].min_duration*SUPER_TONE_BINS/8);
             }
-            memcpy (&s->segments[0], &s->segments[1], 9*sizeof(s->segments[0]));
+            memmove(&s->segments[0], &s->segments[1], 9*sizeof(s->segments[0]));
             s->segments[9].f1 = k1;
             s->segments[9].f2 = k2;
             s->segments[9].min_duration = 1;

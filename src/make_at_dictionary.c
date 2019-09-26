@@ -605,6 +605,38 @@ static void dump_trie(void)
 }
 /*- End of function --------------------------------------------------------*/
 
+static void trie_recursive_free(trie_node_t *t)
+{
+    int i;
+
+    if (t)
+    {
+        if (t->first <= t->last)
+        {
+            for (i = t->first;  i <= t->last;  i++)
+                trie_recursive_free(t->child_list[i]);
+            /*endfor*/
+        }
+        /*endif*/
+        free(t);
+    }
+    /*endif*/
+}
+/*- End of function --------------------------------------------------------*/
+
+static void trie_free(trie_t *s)
+{
+    if (s)
+    {
+        if (s->root)
+            trie_recursive_free(s->root);
+        /*endif*/
+        free(s);
+    }
+    /*endif*/
+}
+/*- End of function --------------------------------------------------------*/
+
 int main(int argc, char *argv[])
 {
     trie_t *s;
@@ -612,6 +644,7 @@ int main(int argc, char *argv[])
 
     if ((s = trie_create()) == NULL)
         exit(2);
+    /*endif*/
 
     printf("/* THIS FILE WAS AUTOMATICALLY GENERATED - ANY MODIFICATIONS MADE TO THIS");
     printf("   FILE MAY BE OVERWRITTEN DURING FUTURE BUILDS OF THE SOFTWARE */\n");
@@ -619,6 +652,7 @@ int main(int argc, char *argv[])
 
     for (i = 0;  wordlist[i];  i++)
         trie_add(s, wordlist[i], strlen(wordlist[i]));
+    /*endfor*/
     printf("// The trie contains %d entries\n", i);
 
     packed_ptr = 0;
@@ -627,6 +661,8 @@ int main(int argc, char *argv[])
     trie_recursive_build_packed_trie(s->root);
 
     dump_trie();
+
+    trie_free(s);
 
     return 0;
 }

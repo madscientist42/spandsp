@@ -54,7 +54,7 @@ SPAN_DECLARE(int) span_schedule_event(span_sched_state_t *s, int us, span_sched_
     if (i >= s->allocated)
     {
         s->allocated += 5;
-        s->sched = (span_sched_t *) realloc(s->sched, sizeof(span_sched_t)*s->allocated);
+        s->sched = (span_sched_t *) span_realloc(s->sched, sizeof(span_sched_t)*s->allocated);
     }
     /*endif*/
     if (i >= s->max_to_date)
@@ -151,9 +151,11 @@ SPAN_DECLARE(int) span_schedule_release(span_sched_state_t *s)
 
 SPAN_DECLARE(int) span_schedule_free(span_sched_state_t *s)
 {
-    span_schedule_release(s);
     if (s)
+    {
+        span_schedule_release(s);
         span_free(s);
+    }
     return 0;
 }
 /*- End of function --------------------------------------------------------*/

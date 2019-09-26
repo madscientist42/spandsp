@@ -2735,7 +2735,7 @@ SPAN_DECLARE(t31_state_t *) t31_init(t31_state_t *s,
     alloced = false;
     if (s == NULL)
     {
-        if ((s = (t31_state_t *) span_alloc(sizeof (*s))) == NULL)
+        if ((s = (t31_state_t *) span_alloc(sizeof(*s))) == NULL)
             return NULL;
         alloced = true;
     }
